@@ -18,7 +18,6 @@ struct ContentView: View {
     @State private var cheatItem: String = "項目A" // インチキ時の固定項目
     @State private var isSpinning: Bool = false // ルーレットが回転中かどうかを管理
     
-    
     var body: some View {
         VStack {
             Spacer()
@@ -78,7 +77,10 @@ struct ContentView: View {
         guard !isSpinning, !items.isEmpty else { return } // 空なら回さない
         isSpinning = true
         
-        let baseRotation: Double = 1440 // 最低4回転
+        // アイテムの角度を更新する
+        updateItemAngles()
+        
+        let baseRotation: Double = Double.random(in: 770...1440) // 最低4回転
         let duration: TimeInterval = Double.random(in: 4.0...7.0) // 4〜7秒のランダム時間
         let steps = 100 // 減速ステップ数
         let interval = duration / Double(steps)
@@ -133,8 +135,29 @@ struct ContentView: View {
         let adjustedRotation = (finalRotation + 90).truncatingRemainder(dividingBy: 360)
         let correctedRotation = (360 - adjustedRotation).truncatingRemainder(dividingBy: 360)
         
+        // 回転角度に基づいて、現在の位置がどの項目に対応しているかを判定
         if let selected = items.first(where: { $0.startAngle <= correctedRotation && correctedRotation < $0.endAngle }) {
             selectedItem = selected.name
+        } else {
+            // 何も見つからない場合は、"選ばれた項目名"を表示
+            selectedItem = "選ばれた項目名"
+        }
+    }
+    
+    // ルーレットが回り始める時に角度を更新するメソッド
+    private func updateItemAngles() {
+        let segmentAngle = 360.0 / Double(items.count)
+        
+        for (index, item) in items.enumerated() {
+            let newStartAngle = segmentAngle * Double(index)
+            let newEndAngle = newStartAngle + segmentAngle
+            
+            // Model のデータを更新
+            item.startAngle = newStartAngle
+            item.endAngle = newEndAngle
+            
+            // 更新を保存
+            try? modelContext.save()
         }
     }
 }
