@@ -8,34 +8,16 @@
 import SwiftUI
 import SwiftData
 
-struct ItemData {
-    let name: String
-    let startAngle: Double
-    let endAngle: Double
-    let color: Color
-}
-
-
 struct ContentView: View {
+    @Environment(\.modelContext) private var modelContext
+    @Query private var items: [Item] // SwiftData のデータを取得
+    
     @State private var rotation: Double = 0
     @State private var selectedItem: String = "選ばれた項目名"
     @State private var isCheatMode: Bool = false // インチキモード
     @State private var cheatItem: String = "項目A" // インチキ時の固定項目
-    @State private var isSpinning: Bool = false // 🎯 ルーレットが回転中かどうかを管理
+    @State private var isSpinning: Bool = false // ルーレットが回転中かどうかを管理
     
-    let items: [ItemData] = ContentView.generateItems()
-    
-    static func generateItems() -> [ItemData] {
-        let names = ["項目A", "項目B", "項目C", "項目D"]
-        let colors: [Color] = [.blue, .orange, .green, .red] // 各項目の色を定義
-        let segmentAngle = 360.0 / Double(names.count)
-        
-        return names.enumerated().map { index in
-            let start = segmentAngle * Double(index.offset)
-            let end = segmentAngle * Double(index.offset + 1)
-            return ItemData(name: names[index.offset], startAngle: start, endAngle: end, color: colors[index.offset])
-        }
-    }
     
     var body: some View {
         VStack {
@@ -76,14 +58,24 @@ struct ContentView: View {
             
             // データ追加ボタン
             Button("データを追加する") {
-                // データ追加画面に遷移する処理を入れる
+                let newItem = Item(name: "項目\(items.count + 1)", startAngle: 0, endAngle: 0, color: .random())
+                modelContext.insert(newItem)
             }
             .padding()
+            
+            // データをリセット
+            Button("リセット") {
+                rotation = 0
+                // アイテムをすべて削除
+                for item in items {
+                    modelContext.delete(item)
+                }
+            }
         }
     }
     
     private func spinRoulette() {
-        guard !isSpinning else { return } // すでに回転中なら何もしない
+        guard !isSpinning, !items.isEmpty else { return } // 空なら回さない
         isSpinning = true
         
         let baseRotation: Double = 1440 // 最低4回転
@@ -98,14 +90,9 @@ struct ContentView: View {
         
         // 🎯 インチキモードの目標角度を決定
         var targetRotation: Double? = nil
-        if isCheatMode, let cheatIndex = items.firstIndex(where: { $0.name == cheatItem }) {
-            let segmentAngle = 360.0 / Double(items.count)
-            let startAngle = segmentAngle * Double(cheatIndex)  // 項目の開始角度
-            let endAngle = segmentAngle * Double(cheatIndex + 1) // 項目の終了角度
-            
-            let randomTarget = Double.random(in: startAngle...endAngle) // 範囲内のランダムな角度
+        if isCheatMode, let cheatItemData = items.first(where: { $0.name == cheatItem }) {
+            let randomTarget = Double.random(in: cheatItemData.startAngle...cheatItemData.endAngle)
             let adjustedTarget = 360 - (randomTarget + 90) // 矢印の向きを考慮
-            
             targetRotation = startRotation + baseRotation + adjustedTarget
         }
         
@@ -117,7 +104,6 @@ struct ContentView: View {
             
             if let targetRotation = targetRotation {
                 let remainingRotation = targetRotation - currentRotation
-                
                 if remainingRotation > 0 {
                     currentRotation += min(speedFactor, remainingRotation * 0.1) // 目標に向かって調整
                 } else {

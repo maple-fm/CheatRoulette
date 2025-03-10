@@ -8,27 +8,29 @@
 import SwiftUI
 
 struct RouletteWheel: View {
-    let items: [ItemData] // 🆕 Item 型のリストに変更
+    let items: [Item] // 🆕 Item 型のリスト
     var rotation: Double
     
     var body: some View {
         ZStack {
-            ForEach(0..<items.count, id: \.self) { index in
-                let startAngle = Angle(degrees: items[index].startAngle)
-                let endAngle = Angle(degrees: items[index].endAngle)
+            let segmentAngle = 360.0 / Double(max(items.count, 1)) // 🔥 分割数を items.count に応じて決定
+            
+            ForEach(items.indices, id: \.self) { index in
+                let startAngle = Angle(degrees: segmentAngle * Double(index))
+                let endAngle = Angle(degrees: segmentAngle * Double(index + 1))
                 let midAngle = Angle(degrees: (startAngle.degrees + endAngle.degrees) / 2) // セグメントの中央角度
                 
-                RouletteSegment(startAngle: startAngle, endAngle: endAngle, color: items[index].color) // 🆕 各項目の color を適用
+                RouletteSegment(startAngle: startAngle, endAngle: endAngle, color: items[index].color) // 🎨 ランダムな色を適用
                     .overlay(
                         GeometryReader { geometry in
                             let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
-                            let radius = min(geometry.size.width, geometry.size.height) / 2 * 0.7 // セグメントの中心あたりに配置
+                            let radius = min(geometry.size.width, geometry.size.height) / 2 * 0.7 // 🎯 文字の配置
                             let textPosition = CGPoint(
                                 x: center.x + radius * cos(CGFloat(midAngle.radians)),
                                 y: center.y + radius * sin(CGFloat(midAngle.radians))
                             )
                             
-                            Text(items[index].name) // 🆕 name を表示
+                            Text(items[index].name)
                                 .foregroundColor(.black)
                                 .font(.system(size: 14, weight: .bold))
                                 .position(x: textPosition.x, y: textPosition.y)
@@ -36,7 +38,7 @@ struct RouletteWheel: View {
                     )
             }
         }
-        .rotationEffect(.degrees(rotation)) // 🆕 外側で回転適用
+        .rotationEffect(.degrees(rotation))
     }
 }
 
