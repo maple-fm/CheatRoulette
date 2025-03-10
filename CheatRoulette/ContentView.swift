@@ -8,12 +8,34 @@
 import SwiftUI
 import SwiftData
 
+struct ItemData {
+    let name: String
+    let startAngle: Double
+    let endAngle: Double
+    let color: Color
+}
+
+
 struct ContentView: View {
     @State private var rotation: Double = 0
     @State private var selectedItem: String = "選ばれた項目名"
+    @State private var isCheatMode: Bool = false // インチキモード
+    @State private var cheatItem: String = "項目A" // インチキ時の固定項目
+    @State private var isSpinning: Bool = false // 🎯 ルーレットが回転中かどうかを管理
     
-    let items: [String] = ["項目A", "項目B", "項目C", "項目D"]
-    let colors: [Color] = [.blue, .orange, .green, .red]
+    let items: [ItemData] = ContentView.generateItems()
+    
+    static func generateItems() -> [ItemData] {
+        let names = ["項目A", "項目B", "項目C", "項目D"]
+        let colors: [Color] = [.blue, .orange, .green, .red] // 各項目の色を定義
+        let segmentAngle = 360.0 / Double(names.count)
+        
+        return names.enumerated().map { index in
+            let start = segmentAngle * Double(index.offset)
+            let end = segmentAngle * Double(index.offset + 1)
+            return ItemData(name: names[index.offset], startAngle: start, endAngle: end, color: colors[index.offset])
+        }
+    }
     
     var body: some View {
         VStack {
@@ -26,7 +48,7 @@ struct ContentView: View {
             
             ZStack {
                 // ルーレット
-                RouletteWheel(items: items, colors: colors, rotation: rotation)
+                RouletteWheel(items: items, rotation: rotation)
                     .frame(width: 300, height: 300)
                 
                 // 矢印
@@ -36,9 +58,16 @@ struct ContentView: View {
                     .offset(y: -150) // ルーレットの上に配置
             }
             
-            // スピンボタン
-            Button("回す") {
-                spinRoulette()
+            HStack {
+                Button("回す") {
+                    spinRoulette()
+                }
+                .padding()
+                .buttonStyle(.borderedProminent)
+                .disabled(isSpinning)
+                
+                Toggle("インチキモード", isOn: $isCheatMode)
+                    .padding()
             }
             .padding()
             .buttonStyle(.borderedProminent)
@@ -54,121 +83,73 @@ struct ContentView: View {
     }
     
     private func spinRoulette() {
-        let totalRotation: Double = 1440 // 2回転以上
-        let duration: TimeInterval = 5.0 // 5秒間で止まる
-        let steps = 100 // 徐々に減速するステップ数
+        guard !isSpinning else { return } // すでに回転中なら何もしない
+        isSpinning = true
+        
+        let baseRotation: Double = 1440 // 最低4回転
+        let duration: TimeInterval = Double.random(in: 4.0...7.0) // 4〜7秒のランダム時間
+        let steps = 100 // 減速ステップ数
         let interval = duration / Double(steps)
         
         var currentStep = 0
+        let startRotation = rotation.truncatingRemainder(dividingBy: 360) // 現在の角度を取得
         var currentRotation = rotation
-        let initialSpeed = totalRotation / Double(steps) * 5 // 最初のスピードを速めに
+        let initialSpeed = baseRotation / Double(steps) * 5 // 初速度
+        
+        // 🎯 インチキモードの目標角度を決定
+        var targetRotation: Double? = nil
+        if isCheatMode, let cheatIndex = items.firstIndex(where: { $0.name == cheatItem }) {
+            let segmentAngle = 360.0 / Double(items.count)
+            let startAngle = segmentAngle * Double(cheatIndex)  // 項目の開始角度
+            let endAngle = segmentAngle * Double(cheatIndex + 1) // 項目の終了角度
+            
+            let randomTarget = Double.random(in: startAngle...endAngle) // 範囲内のランダムな角度
+            let adjustedTarget = 360 - (randomTarget + 90) // 矢印の向きを考慮
+            
+            targetRotation = startRotation + baseRotation + adjustedTarget
+        }
         
         Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in
             let progress = Double(currentStep) / Double(steps)
-            let speedFactor = (1.0 - progress) * initialSpeed // 徐々に減速
-            currentRotation += speedFactor
+            
+            // 🎯 スムーズな減速ロジック
+            let speedFactor = initialSpeed * (1.0 - pow(progress, 3))
+            
+            if let targetRotation = targetRotation {
+                let remainingRotation = targetRotation - currentRotation
+                
+                if remainingRotation > 0 {
+                    currentRotation += min(speedFactor, remainingRotation * 0.1) // 目標に向かって調整
+                } else {
+                    timer.invalidate()
+                    finalizeSelection()
+                    isSpinning = false
+                    return
+                }
+            } else {
+                currentRotation += speedFactor // 通常モードの回転
+            }
             
             rotation = currentRotation
             
             if currentStep >= steps {
-                timer.invalidate() // 停止
-                finalizeSelection() // 選ばれた項目を決定
+                timer.invalidate()
+                finalizeSelection()
+                isSpinning = false
             }
             
             currentStep += 1
         }
     }
     
-    // 🎯 停止後に正しい項目を選択
     private func finalizeSelection() {
         let finalRotation = rotation.truncatingRemainder(dividingBy: 360)
-        
-        // 🎯 矢印が「下向き」なので90°補正
         let adjustedRotation = (finalRotation + 90).truncatingRemainder(dividingBy: 360)
-        
-        let segmentAngle = 360.0 / Double(items.count)
-        
-        // 🎯 SwiftUIの座標系に合わせて角度を反時計回りに調整
         let correctedRotation = (360 - adjustedRotation).truncatingRemainder(dividingBy: 360)
         
-        for (index, _) in items.enumerated() {
-            let startAngle = segmentAngle * Double(index)
-            let endAngle = segmentAngle * Double(index + 1)
-            
-            if startAngle <= correctedRotation && correctedRotation < endAngle {
-                selectedItem = items[index]
-                break
-            }
+        if let selected = items.first(where: { $0.startAngle <= correctedRotation && correctedRotation < $0.endAngle }) {
+            selectedItem = selected.name
         }
-    }
-
-
-}
-
-struct RouletteWheel: View {
-    let items: [String]
-    let colors: [Color]
-    var rotation: Double
-    
-    var body: some View {
-        ZStack {
-            ForEach(0..<items.count, id: \.self) { index in
-                let startAngle = Angle(degrees: (Double(index) / Double(items.count)) * 360)
-                let endAngle = Angle(degrees: (Double(index + 1) / Double(items.count)) * 360)
-                let midAngle = Angle(degrees: (startAngle.degrees + endAngle.degrees) / 2) // セグメントの中央角度
-                
-                RouletteSegment(startAngle: startAngle, endAngle: endAngle, color: colors[index % colors.count])
-                    .overlay(
-                        GeometryReader { geometry in
-                            let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
-                            let radius = min(geometry.size.width, geometry.size.height) / 2 * 0.7 // セグメントの中心あたりに配置
-                            let textPosition = CGPoint(
-                                x: center.x + radius * cos(CGFloat(midAngle.radians)),
-                                y: center.y + radius * sin(CGFloat(midAngle.radians))
-                            )
-                            
-                            Text(items[index])
-                                .foregroundColor(.black)
-                                .font(.system(size: 14, weight: .bold))
-                                .position(x: textPosition.x, y: textPosition.y)
-                        }
-                    )
-            }
-        }
-        .rotationEffect(.degrees(rotation))
-    }
-}
-
-// ルーレットのセグメント
-struct RouletteSegment: View {
-    let startAngle: Angle
-    let endAngle: Angle
-    let color: Color
-    
-    var body: some View {
-        GeometryReader { geometry in
-            Path { path in
-                let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
-                let radius = min(geometry.size.width, geometry.size.height) / 2
-                
-                path.move(to: center)
-                path.addArc(center: center, radius: radius, startAngle: startAngle, endAngle: endAngle, clockwise: false)
-                path.closeSubpath()
-            }
-            .fill(color)
-        }
-    }
-}
-
-// 矢印の形状
-struct Triangle: Shape {
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        path.move(to: CGPoint(x: rect.minX, y: rect.minY)) // 左上
-        path.addLine(to: CGPoint(x: rect.maxX, y: rect.minY)) // 右上
-        path.addLine(to: CGPoint(x: rect.midX, y: rect.maxY)) // 下中央（矢印の先端）
-        path.closeSubpath()
-        return path
     }
 }
 
