@@ -6,47 +6,53 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ItemEditView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @State private var addedItems: [Item] = []
+    @Query private var items: [Item] // 既存データを取得
     
     var body: some View {
         NavigationStack {
             Form {
-                Section(header: Text("追加された項目")) {
-                    List($addedItems, id: \.id) { $item in
-                        TextField("項目名", text: $item.name)
+                Section(header: Text("登録済みの項目")) {
+                    List {
+                        ForEach(items) { item in
+                            HStack {
+                                TextField("項目名", text: Binding(
+                                    get: { item.name },
+                                    set: { item.name = $0 }
+                                ))
+                                
+                                Button(role: .destructive) {
+                                    modelContext.delete(item) // 削除
+                                } label: {
+                                    Image(systemName: "trash")
+                                        .foregroundColor(.red)
+                                }
+                            }
+                        }
+                        .onDelete(perform: deleteItem) // スワイプ削除
                     }
                 }
-                
-                Button("追加") {
-                    // 新規項目を作成し、即座に modelContext に挿入する
-                    let newItem = Item(name: "\(addedItems.count + 1)", startAngle: 0, endAngle: 0, color: .random())
-                    modelContext.insert(newItem)
-                    addedItems.append(newItem)
-                }
             }
-            .navigationTitle("項目を追加")
+            .navigationTitle("項目を編集")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
-                    Button("完了") {
-                        // ここでは既に modelContext に挿入済みのため、
-                        // ユーザーが編集した名前もそのまま反映される
-                        dismiss()
-                    }
+                    Button("完了") { dismiss() }
                 }
                 ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") {
-                        // キャンセル時には、追加した項目を削除することも可能
-                        for item in addedItems {
-                            modelContext.delete(item)
-                        }
-                        dismiss()
-                    }
+                    Button("キャンセル") { dismiss() }
                 }
             }
+        }
+    }
+    
+    private func deleteItem(at offsets: IndexSet) {
+        for index in offsets {
+            let itemToDelete = items[index]
+            modelContext.delete(itemToDelete)
         }
     }
 }

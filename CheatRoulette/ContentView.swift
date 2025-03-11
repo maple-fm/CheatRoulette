@@ -17,7 +17,8 @@ struct ContentView: View {
     @State private var isCheatMode: Bool = false // インチキモード
     @State private var cheatItem: String = "項目A" // インチキ時の固定項目
     @State private var isSpinning: Bool = false // ルーレットが回転中かどうかを管理
-    @State private var isShowingEditView = false // 編集画面表示用
+    @State private var isShowingNewItemView = false
+    @State private var isShowingEditView = false
     
     
     var body: some View {
@@ -30,9 +31,29 @@ struct ContentView: View {
                 .padding()
             
             ZStack {
-                // ルーレット
-                RouletteWheel(items: items, rotation: rotation)
-                    .frame(width: 300, height: 300)
+                ZStack {
+                    // ルーレット
+                    RouletteWheel(items: items, rotation: rotation)
+                        .frame(width: 300, height: 300)
+                    
+                    // 🎯 ルーレットの中央にボタンを配置
+                    Button(action: {
+                        // アイテムの角度を更新する
+                        updateItemAngles()
+                        spinRoulette()
+                        
+                    }) {
+                        Circle()
+                            .fill(Color.white)
+                            .frame(width: 150, height: 150)
+                            .overlay(
+                                Text("回す")
+                                    .foregroundColor(.black)
+                                    .font(.title)
+                                    .bold()
+                            )
+                    }
+                }
                 
                 // 矢印
                 Triangle()
@@ -42,15 +63,6 @@ struct ContentView: View {
             }
             
             HStack {
-                Button("回す") {
-                    // アイテムの角度を更新する
-                    updateItemAngles()
-                    spinRoulette()
-                }
-                .padding()
-                .buttonStyle(.borderedProminent)
-                .disabled(isSpinning)
-                
                 Toggle("インチキモード", isOn: $isCheatMode)
                     .padding()
             }
@@ -62,17 +74,19 @@ struct ContentView: View {
             // データ追加ボタン
             Button("データを追加する") {
                 removeAll()
+                isShowingNewItemView = true
+            }
+            .padding()
+            .sheet(isPresented: $isShowingNewItemView) {
+                AddView()
+            }
+            
+            Button("項目を編集する") {
                 isShowingEditView = true
             }
             .padding()
             .sheet(isPresented: $isShowingEditView) {
                 ItemEditView()
-            }
-            
-            // データをリセット
-            Button("リセット") {
-                rotation = 0
-                removeAll()
             }
         }
     }
