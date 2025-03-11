@@ -17,6 +17,8 @@ struct ContentView: View {
     @State private var isCheatMode: Bool = false // インチキモード
     @State private var cheatItem: String = "項目A" // インチキ時の固定項目
     @State private var isSpinning: Bool = false // ルーレットが回転中かどうかを管理
+    @State private var isShowingEditView = false // 編集画面表示用
+    
     
     var body: some View {
         VStack {
@@ -41,6 +43,8 @@ struct ContentView: View {
             
             HStack {
                 Button("回す") {
+                    // アイテムの角度を更新する
+                    updateItemAngles()
                     spinRoulette()
                 }
                 .padding()
@@ -57,18 +61,18 @@ struct ContentView: View {
             
             // データ追加ボタン
             Button("データを追加する") {
-                let newItem = Item(name: "項目\(items.count + 1)", startAngle: 0, endAngle: 0, color: .random())
-                modelContext.insert(newItem)
+                removeAll()
+                isShowingEditView = true
             }
             .padding()
+            .sheet(isPresented: $isShowingEditView) {
+                ItemEditView()
+            }
             
             // データをリセット
             Button("リセット") {
                 rotation = 0
-                // アイテムをすべて削除
-                for item in items {
-                    modelContext.delete(item)
-                }
+                removeAll()
             }
         }
     }
@@ -76,9 +80,6 @@ struct ContentView: View {
     private func spinRoulette() {
         guard !isSpinning, !items.isEmpty else { return } // 空なら回さない
         isSpinning = true
-        
-        // アイテムの角度を更新する
-        updateItemAngles()
         
         let baseRotation: Double = Double.random(in: 770...1440) // 最低4回転
         let duration: TimeInterval = Double.random(in: 4.0...7.0) // 4〜7秒のランダム時間
@@ -141,6 +142,13 @@ struct ContentView: View {
         } else {
             // 何も見つからない場合は、"選ばれた項目名"を表示
             selectedItem = "選ばれた項目名"
+        }
+    }
+    
+    private func removeAll() {
+        // アイテムをすべて削除
+        for item in items {
+            modelContext.delete(item)
         }
     }
     
