@@ -33,6 +33,19 @@ final class Item {
     }
 }
 
+@Model
+class Template {
+    @Attribute(.unique) var id: UUID
+    var name: String
+    var items: [Item] = [] // 🆕 itemsを配列として保存できるように
+    
+    init(name: String, items: [Item]) {
+        self.id = UUID()
+        self.name = name
+        self.items = items
+    }
+}
+
 extension Color {
     func toHex() -> String {
         guard let components = UIColor(self).cgColor.components else { return "#000000" }

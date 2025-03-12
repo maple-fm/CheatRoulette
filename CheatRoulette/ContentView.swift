@@ -11,6 +11,8 @@ import SwiftData
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var items: [Item] // SwiftData のデータを取得
+    @Query private var templates: [Template]
+    @State private var selectedTemplate: Template?
     
     @State private var rotation: Double = 0
     @State private var selectedItem: String = "選ばれた項目名"
@@ -19,6 +21,7 @@ struct ContentView: View {
     @State private var isSpinning: Bool = false // ルーレットが回転中かどうかを管理
     @State private var isShowingNewItemView = false
     @State private var isShowingEditView = false
+    @State private var isSelectingTemplate = false // テンプレート選択画面の表示管理
     
     
     var body: some View {
@@ -87,6 +90,15 @@ struct ContentView: View {
             .padding()
             .sheet(isPresented: $isShowingEditView) {
                 ItemEditView()
+            }
+            
+            Button("テンプレートを選択") {
+                isSelectingTemplate = true // モーダルを開く
+            }
+            .sheet(isPresented: $isSelectingTemplate) {
+                TemplateSelectionView { selectedTemplate in
+                    applyTemplate(selectedTemplate) // 選択したテンプレートを適用
+                }
             }
         }
     }
@@ -181,6 +193,20 @@ struct ContentView: View {
             // 更新を保存
             try? modelContext.save()
         }
+    }
+    
+    private func applyTemplate(_ template: Template) {
+        // 現在の items をクリアして、新しいテンプレートの items を適用
+        for item in items {
+            modelContext.delete(item)
+        }
+        
+        for newItem in template.items {
+            let copiedItem = Item(name: newItem.name, startAngle: 0, endAngle: 0, color: newItem.color)
+            modelContext.insert(copiedItem)
+        }
+        
+        try? modelContext.save()
     }
 }
 

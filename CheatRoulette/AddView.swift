@@ -27,6 +27,22 @@ struct AddView: View {
                     modelContext.insert(newItem)
                     addedItems.append(newItem)
                 }
+                
+                Button("テンプレートとして保存") {
+                    let copiedItems = addedItems.map { item in
+                        Item(name: item.name, startAngle: item.startAngle, endAngle: item.endAngle, color: item.color)
+                    }
+                    
+                    let template = Template(name: "新しいテンプレート", items: copiedItems)
+                    modelContext.insert(template)
+                    
+                    do {
+                        try modelContext.save()
+                        dismiss()
+                    } catch {
+                        print("保存エラー: \(error.localizedDescription)")
+                    }
+                }
             }
             .navigationTitle("項目を追加")
             .toolbar {
