@@ -12,47 +12,78 @@ struct AddView: View {
     @Environment(\.modelContext) private var modelContext
     @Binding var items: [Item]
     
+    @State private var showSaveAlert = false // ポップアップ表示状態
+    @State private var templateName = "" // 入力されたテンプレート名
+    
+    @State private var showCancelAlert = false // キャンセル確認のポップアップ
+    @State private var tempItems: [Item] = [] // 編集用の一時データ
+    
     var body: some View {
         NavigationStack {
             Form {
+                Button("追加") {
+                    let newItem = Item(name: "\(tempItems.count + 1)", startAngle: 0, endAngle: 0, color: .random())
+                    tempItems.append(newItem) // UI 上のみで管理
+                }
+                
+                Button("テンプレートとして保存") {
+                    templateName = "" // 初期化
+                    showSaveAlert = true  // アラートを表示
+                }
+                
                 Section(header: Text("追加された項目")) {
-                    List($items, id: \.id) { $item in
+                    List($tempItems, id: \.id) { $item in
                         TextField("項目名", text: $item.name)
                     }
                 }
                 
-                Button("追加") {
-                    let newItem = Item(name: "\(items.count + 1)", startAngle: 0, endAngle: 0, color: .random())
-                    items.append(newItem) // UI 上のみで管理
-                }
-                
-                Button("テンプレートとして保存") {
-                    let copiedItems = items.map { item in
-                        Item(name: item.name, startAngle: 0, endAngle: 0, color: item.color) // 新規 ID でコピー
-                    }
-                    let template = Template(name: "新しいテンプレート", items: copiedItems)
-                    modelContext.insert(template)
-                    do {
-                        try modelContext.save()
-                        dismiss()
-                    } catch {
-                        print("保存エラー: \(error.localizedDescription)")
-                    }
-                }
             }
             .navigationTitle("項目を追加")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("完了") {
+                        if !tempItems.isEmpty {
+                            items = tempItems
+                        }
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("キャンセル") {
-                        dismiss()
+                        if tempItems.isEmpty {
+                            dismiss()
+                        } else {
+                            showCancelAlert = true
+                        }
                     }
                 }
             }
+            .alert("テンプレート名を入力", isPresented: $showSaveAlert) {
+                TextField("テンプレート名", text: $templateName)
+                Button("保存", action: saveTemplate)
+                Button("キャンセル", role: .cancel) { }
+            }
+            .alert("変更を破棄しますか？", isPresented: $showCancelAlert) {
+                Button("破棄", role: .destructive) { dismiss() }
+                Button("キャンセル", role: .cancel) { }
+            }
+        }
+    }
+    
+    private func saveTemplate() {
+        guard !templateName.isEmpty else { return }
+        
+        let copiedItems = items.map { item in
+            Item(name: item.name, startAngle: item.startAngle, endAngle: item.endAngle, color: item.color)
+        }
+        let template = Template(name: templateName, items: copiedItems)
+        modelContext.insert(template)
+        
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            print("保存エラー: \(error.localizedDescription)")
         }
     }
 }

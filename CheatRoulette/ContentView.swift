@@ -76,7 +76,6 @@ struct ContentView: View {
             
             // データ追加ボタン
             Button("データを追加する") {
-                removeAll()
                 isShowingNewItemView = true
             }
             .padding()
