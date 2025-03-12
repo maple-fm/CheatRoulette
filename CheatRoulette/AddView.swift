@@ -29,11 +29,7 @@ struct AddView: View {
                 }
                 
                 Button("テンプレートとして保存") {
-                    let copiedItems = addedItems.map { item in
-                        Item(name: item.name, startAngle: item.startAngle, endAngle: item.endAngle, color: item.color)
-                    }
-                    
-                    let template = Template(name: "新しいテンプレート", items: copiedItems)
+                    let template = Template(name: "新しいテンプレート", items: Array(addedItems))
                     modelContext.insert(template)
                     
                     do {

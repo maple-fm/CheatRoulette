@@ -176,6 +176,8 @@ struct ContentView: View {
         for item in items {
             modelContext.delete(item)
         }
+        
+        try? modelContext.save()
     }
     
     // ルーレットが回り始める時に角度を更新するメソッド
@@ -197,9 +199,7 @@ struct ContentView: View {
     
     private func applyTemplate(_ template: Template) {
         // 現在の items をクリアして、新しいテンプレートの items を適用
-        for item in items {
-            modelContext.delete(item)
-        }
+        removeAll()
         
         for newItem in template.items {
             let copiedItem = Item(name: newItem.name, startAngle: 0, endAngle: 0, color: newItem.color)
