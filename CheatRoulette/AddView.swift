@@ -10,28 +10,28 @@ import SwiftUI
 struct AddView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
-    @State private var addedItems: [Item] = []
+    @Binding var items: [Item]
     
     var body: some View {
         NavigationStack {
             Form {
                 Section(header: Text("追加された項目")) {
-                    List($addedItems, id: \.id) { $item in
+                    List($items, id: \.id) { $item in
                         TextField("項目名", text: $item.name)
                     }
                 }
                 
                 Button("追加") {
-                    // 新規項目を作成し、即座に modelContext に挿入する
-                    let newItem = Item(name: "\(addedItems.count + 1)", startAngle: 0, endAngle: 0, color: .random())
-                    modelContext.insert(newItem)
-                    addedItems.append(newItem)
+                    let newItem = Item(name: "\(items.count + 1)", startAngle: 0, endAngle: 0, color: .random())
+                    items.append(newItem) // UI 上のみで管理
                 }
                 
                 Button("テンプレートとして保存") {
-                    let template = Template(name: "新しいテンプレート", items: Array(addedItems))
+                    let copiedItems = items.map { item in
+                        Item(name: item.name, startAngle: 0, endAngle: 0, color: item.color) // 新規 ID でコピー
+                    }
+                    let template = Template(name: "新しいテンプレート", items: copiedItems)
                     modelContext.insert(template)
-                    
                     do {
                         try modelContext.save()
                         dismiss()
@@ -44,17 +44,11 @@ struct AddView: View {
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("完了") {
-                        // ここでは既に modelContext に挿入済みのため、
-                        // ユーザーが編集した名前もそのまま反映される
                         dismiss()
                     }
                 }
                 ToolbarItem(placement: .cancellationAction) {
                     Button("キャンセル") {
-                        // キャンセル時には、追加した項目を削除することも可能
-                        for item in addedItems {
-                            modelContext.delete(item)
-                        }
                         dismiss()
                     }
                 }
@@ -64,5 +58,5 @@ struct AddView: View {
 }
 
 #Preview {
-    AddView()
+    AddView(items: .constant([]))
 }

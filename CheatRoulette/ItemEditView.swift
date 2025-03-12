@@ -10,23 +10,21 @@ import SwiftData
 
 struct ItemEditView: View {
     @Environment(\.dismiss) private var dismiss
-    @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item] // 既存データを取得
+    @Binding var items: [Item] // @Binding で UI 上のリストを編集
     
     var body: some View {
         NavigationStack {
             Form {
                 Section(header: Text("登録済みの項目")) {
                     List {
-                        ForEach(items) { item in
+                        ForEach($items, id: \.id) { $item in
                             HStack {
-                                TextField("項目名", text: Binding(
-                                    get: { item.name },
-                                    set: { item.name = $0 }
-                                ))
+                                TextField("項目名", text: $item.name)
                                 
                                 Button(role: .destructive) {
-                                    modelContext.delete(item) // 削除
+                                    if let index = items.firstIndex(where: { $0.id == item.id }) {
+                                        items.remove(at: index) // UI 上から削除
+                                    }
                                 } label: {
                                     Image(systemName: "trash")
                                         .foregroundColor(.red)
@@ -50,13 +48,13 @@ struct ItemEditView: View {
     }
     
     private func deleteItem(at offsets: IndexSet) {
-        for index in offsets {
-            let itemToDelete = items[index]
-            modelContext.delete(itemToDelete)
-        }
+        items.remove(atOffsets: offsets) // UI 上で削除
     }
 }
 
 #Preview {
-    ItemEditView()
+    ItemEditView(items: .constant([
+        Item(name: "サンプル1", startAngle: 0, endAngle: 0, color: .red),
+        Item(name: "サンプル2", startAngle: 0, endAngle: 0, color: .blue)
+    ]))
 }

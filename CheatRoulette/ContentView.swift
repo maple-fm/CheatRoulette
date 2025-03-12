@@ -10,7 +10,7 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @Query private var items: [Item] // SwiftData のデータを取得
+    @State private var items: [Item] = [] // データベースには保存せず、UI上のみで管理
     @Query private var templates: [Template]
     @State private var selectedTemplate: Template?
     
@@ -81,7 +81,7 @@ struct ContentView: View {
             }
             .padding()
             .sheet(isPresented: $isShowingNewItemView) {
-                AddView()
+                AddView(items: $items)
             }
             
             Button("項目を編集する") {
@@ -89,7 +89,7 @@ struct ContentView: View {
             }
             .padding()
             .sheet(isPresented: $isShowingEditView) {
-                ItemEditView()
+                ItemEditView(items: $items)
             }
             
             Button("テンプレートを選択") {
@@ -172,12 +172,7 @@ struct ContentView: View {
     }
     
     private func removeAll() {
-        // アイテムをすべて削除
-        for item in items {
-            modelContext.delete(item)
-        }
-        
-        try? modelContext.save()
+        items.removeAll()
     }
     
     // ルーレットが回り始める時に角度を更新するメソッド
@@ -198,15 +193,9 @@ struct ContentView: View {
     }
     
     private func applyTemplate(_ template: Template) {
-        // 現在の items をクリアして、新しいテンプレートの items を適用
-        removeAll()
-        
-        for newItem in template.items {
-            let copiedItem = Item(name: newItem.name, startAngle: 0, endAngle: 0, color: newItem.color)
-            modelContext.insert(copiedItem)
+        items = template.items.map { item in
+            Item(name: item.name, startAngle: 0, endAngle: 0, color: item.color) // 新しいItemとして作成
         }
-        
-        try? modelContext.save()
     }
 }
 

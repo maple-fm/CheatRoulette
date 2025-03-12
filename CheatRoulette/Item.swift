@@ -37,7 +37,8 @@ final class Item {
 class Template {
     @Attribute(.unique) var id: UUID
     var name: String
-    var items: [Item] = [] // 🆕 itemsを配列として保存できるように
+    
+    @Relationship(deleteRule: .cascade) var items: [Item]
     
     init(name: String, items: [Item]) {
         self.id = UUID()
