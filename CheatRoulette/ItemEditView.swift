@@ -11,23 +11,32 @@ import SwiftData
 struct ItemEditView: View {
     @Environment(\.dismiss) private var dismiss
     @Binding var items: [Item] // @Binding で UI 上のリストを編集
+    @Binding var riggedItemID: UUID? // インチキする項目のID
     
     var body: some View {
         NavigationStack {
             Form {
                 Section(header: Text("登録済みの項目")) {
                     List {
-                        ForEach($items, id: \.id) { $item in
+                        ForEach(items) { item in
                             HStack {
-                                TextField("項目名", text: $item.name)
+                                TextField("項目名", text: Binding(
+                                    get: { item.name },
+                                    set: { item.name = $0 }
+                                ))
                                 
-                                Button(role: .destructive) {
-                                    if let index = items.firstIndex(where: { $0.id == item.id }) {
-                                        items.remove(at: index) // UI 上から削除
+                                Spacer()
+                                
+                                // インチキ項目を選択するラジオボタン
+                                Button(action: {
+                                    if riggedItemID == item.id {
+                                        riggedItemID = nil // すでに選択済みなら解除
+                                    } else {
+                                        riggedItemID = item.id
                                     }
-                                } label: {
-                                    Image(systemName: "trash")
-                                        .foregroundColor(.red)
+                                }) {
+                                    Image(systemName: riggedItemID == item.id ? "largecircle.fill.circle" : "circle")
+                                        .foregroundColor(.blue)
                                 }
                             }
                         }
@@ -48,7 +57,13 @@ struct ItemEditView: View {
     }
     
     private func deleteItem(at offsets: IndexSet) {
-        items.remove(atOffsets: offsets) // UI 上で削除
+        for index in offsets {
+            let itemToDelete = items[index]
+            if riggedItemID == itemToDelete.id {
+                riggedItemID = nil // インチキ対象を削除したら解除
+            }
+            items.remove(at: index)
+        }
     }
 }
 
@@ -56,5 +71,5 @@ struct ItemEditView: View {
     ItemEditView(items: .constant([
         Item(name: "サンプル1", startAngle: 0, endAngle: 0, color: .red),
         Item(name: "サンプル2", startAngle: 0, endAngle: 0, color: .blue)
-    ]))
+    ]), riggedItemID: .constant(UUID()))
 }

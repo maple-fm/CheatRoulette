@@ -17,11 +17,12 @@ struct ContentView: View {
     @State private var rotation: Double = 0
     @State private var selectedItem: String = "選ばれた項目名"
     @State private var isCheatMode: Bool = false // インチキモード
-    @State private var cheatItem: String = "項目A" // インチキ時の固定項目
     @State private var isSpinning: Bool = false // ルーレットが回転中かどうかを管理
     @State private var isShowingNewItemView = false
     @State private var isShowingEditView = false
     @State private var isSelectingTemplate = false // テンプレート選択画面の表示管理
+    
+    @State private var riggedItemID: UUID? // インチキする項目のID
     
     
     var body: some View {
@@ -88,7 +89,7 @@ struct ContentView: View {
             }
             .padding()
             .sheet(isPresented: $isShowingEditView) {
-                ItemEditView(items: $items)
+                ItemEditView(items: $items, riggedItemID: $riggedItemID)
             }
             
             Button("テンプレートを選択") {
@@ -118,8 +119,8 @@ struct ContentView: View {
         
         // 🎯 インチキモードの目標角度を決定
         var targetRotation: Double? = nil
-        if isCheatMode, let cheatItemData = items.first(where: { $0.name == cheatItem }) {
-            let randomTarget = Double.random(in: cheatItemData.startAngle...cheatItemData.endAngle)
+        if isCheatMode, let riggedID = riggedItemID, let riggedItem = items.first(where: { $0.id == riggedID }) {
+            let randomTarget = Double.random(in: riggedItem.startAngle...riggedItem.endAngle)
             let adjustedTarget = 360 - (randomTarget + 90) // 矢印の向きを考慮
             targetRotation = startRotation + baseRotation + adjustedTarget
         }
