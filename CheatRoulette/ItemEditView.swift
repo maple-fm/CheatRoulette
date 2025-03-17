@@ -10,8 +10,12 @@ import SwiftData
 
 struct ItemEditView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.modelContext) private var modelContext
     @Binding var items: [Item] // @Binding で UI 上のリストを編集
     @Binding var riggedItemID: UUID? // インチキする項目のID
+    
+    @State private var showSaveAlert = false // アラート表示用
+    @State private var templateName = "" // 入力されたテンプレート名
     
     var body: some View {
         NavigationStack {
@@ -52,6 +56,17 @@ struct ItemEditView: View {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("キャンセル") { dismiss() }
                 }
+                ToolbarItem(placement: .bottomBar) { // 下部ツールバーに追加
+                    Button("テンプレートとして保存") {
+                        templateName = ""
+                        showSaveAlert = true
+                    }
+                }
+            }
+            .alert("テンプレート名を入力", isPresented: $showSaveAlert) {
+                TextField("テンプレート名", text: $templateName)
+                Button("保存", action: saveTemplate)
+                Button("キャンセル", role: .cancel) { }
             }
         }
     }
@@ -63,6 +78,27 @@ struct ItemEditView: View {
                 riggedItemID = nil // インチキ対象を削除したら解除
             }
             items.remove(at: index)
+        }
+    }
+    
+    private func saveTemplate() {
+        guard !templateName.isEmpty else { return }
+        
+        // SwiftData に保存するため、新しい Item インスタンスを作成
+        let copiedItems = items.map { item in
+            let newItem = Item(name: item.name, startAngle: item.startAngle, endAngle: item.endAngle, color: item.color)
+            modelContext.insert(newItem)
+            return newItem
+        }
+        
+        let template = Template(name: templateName, items: copiedItems)
+        modelContext.insert(template)
+        
+        do {
+            try modelContext.save()
+            dismiss()
+        } catch {
+            print("保存エラー: \(error.localizedDescription)")
         }
     }
 }
