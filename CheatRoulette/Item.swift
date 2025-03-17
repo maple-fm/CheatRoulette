@@ -17,6 +17,7 @@ final class Item {
     var startAngle: Double // ルーレット上の開始角度
     var endAngle: Double   // ルーレット上の終了角度
     var colorHex: String   // 色を16進数文字列で保存
+    var createdAt: Date = Date() // 追加順を管理
     
     init(name: String, startAngle: Double, endAngle: Double, color: Color, timestamp: Date = Date()) {
         self.id = UUID()

@@ -18,7 +18,14 @@ struct TemplateSelectionView: View {
             List {
                 ForEach(templates) { template in
                     Button {
-                        onSelect(template) // 選択時の処理を呼び出す
+                        // 追加順を維持するために createdAt でソート
+                        let sortedItems = template.items.sorted(by: { $0.createdAt < $1.createdAt })
+                        
+                        // 新しい Template インスタンスを作成
+                        let sortedTemplate = Template(name: template.name, items: sortedItems)
+                        
+                        // onSelect に並び替えたテンプレートを渡す
+                        onSelect(sortedTemplate)
                         dismiss() // 画面を閉じる
                     } label: {
                         HStack {
