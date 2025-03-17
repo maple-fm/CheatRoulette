@@ -107,6 +107,10 @@ struct ContentView: View {
         guard !isSpinning, !items.isEmpty else { return } // 空なら回さない
         isSpinning = true
         
+        // 🎯 ルーレットの回転角をリセット
+        if isCheatMode {
+            rotation = 0
+        }
         let baseRotation: Double = Double.random(in: 770...1440) // 最低4回転
         let duration: TimeInterval = Double.random(in: 4.0...9.0) // 4〜9秒のランダム時間
         let steps = 100 // 減速ステップ数
@@ -128,7 +132,6 @@ struct ContentView: View {
         let cheatRotation = 1080.0 // 3回転
         let finalTarget = startRotation + cheatRotation + adjustedTarget
         
-        print("✅ 3回転後インチキターゲット: \(finalTarget.truncatingRemainder(dividingBy: 360))°")
         return finalTarget
     }
     
