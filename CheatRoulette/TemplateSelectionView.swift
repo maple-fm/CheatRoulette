@@ -11,6 +11,8 @@ import SwiftData
 struct TemplateSelectionView: View {
     @Environment(\.dismiss) private var dismiss
     @Query private var templates: [Template] // SwiftData からテンプレートを取得
+    
+    @Environment(\.modelContext) private var modelContext
     var onSelect: (Template) -> Void
     
     var body: some View {
@@ -34,8 +36,22 @@ struct TemplateSelectionView: View {
                         }
                     }
                 }
+                .onDelete(perform: deleteTemplate) // スワイプ削除を追加
             }
             .navigationTitle("テンプレートを選択")
+        }
+    }
+    
+    /// テンプレートを削除する処理
+    private func deleteTemplate(at offsets: IndexSet) {
+        for index in offsets {
+            let templateToDelete = templates[index]
+            modelContext.delete(templateToDelete) // SwiftData から削除
+        }
+        do {
+            try modelContext.save() // データを保存
+        } catch {
+            print("削除エラー: \(error.localizedDescription)")
         }
     }
 }

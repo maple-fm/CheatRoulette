@@ -73,14 +73,17 @@ struct AddView: View {
     private func saveTemplate() {
         guard !templateName.isEmpty else { return }
         
-        let copiedItems = items.map { item in
+        let copiedItems = tempItems.map { item in
             Item(name: item.name, startAngle: item.startAngle, endAngle: item.endAngle, color: item.color)
         }
+        
+        // テンプレートを作成して SwiftData に登録
         let template = Template(name: templateName, items: copiedItems)
         modelContext.insert(template)
         
         do {
             try modelContext.save()
+            items = tempItems
             dismiss()
         } catch {
             print("保存エラー: \(error.localizedDescription)")
