@@ -44,7 +44,7 @@ struct ContentView: View {
                     Button(action: {
                         // アイテムの角度を更新する
                         updateItemAngles()
-                        spinRoulette()
+                        startSpinning()
                         
                     }) {
                         Circle()
@@ -103,49 +103,63 @@ struct ContentView: View {
         }
     }
     
-    private func spinRoulette() {
+    private func startSpinning() {
         guard !isSpinning, !items.isEmpty else { return } // 空なら回さない
         isSpinning = true
         
         let baseRotation: Double = Double.random(in: 770...1440) // 最低4回転
-        let duration: TimeInterval = Double.random(in: 4.0...7.0) // 4〜7秒のランダム時間
+        let duration: TimeInterval = Double.random(in: 4.0...9.0) // 4〜9秒のランダム時間
         let steps = 100 // 減速ステップ数
-        let interval = duration / Double(steps)
         
-        var currentStep = 0
-        let startRotation = rotation.truncatingRemainder(dividingBy: 360) // 現在の角度を取得
-        var currentRotation = rotation
-        let initialSpeed = baseRotation / Double(steps) * 5 // 初速度
+        let startRotation = rotation.truncatingRemainder(dividingBy: 360) // 現在の角度
+        let targetRotation = calculateTargetRotation(baseRotation: baseRotation, startRotation: startRotation)
         
-        // 🎯 インチキモードの目標角度を決定
-        var targetRotation: Double? = nil
-        if isCheatMode, let riggedID = riggedItemID, let riggedItem = items.first(where: { $0.id == riggedID }) {
-            let randomTarget = Double.random(in: riggedItem.startAngle...riggedItem.endAngle)
-            let adjustedTarget = 360 - (randomTarget + 90) // 矢印の向きを考慮
-            targetRotation = startRotation + baseRotation + adjustedTarget
+        applyRotationAnimation(duration: duration, steps: steps, targetRotation: targetRotation)
+    }
+    
+    private func calculateTargetRotation(baseRotation: Double, startRotation: Double) -> Double? {
+        guard isCheatMode, let riggedID = riggedItemID, let riggedItem = items.first(where: { $0.id == riggedID }) else {
+            return nil
         }
+        
+        let targetAngle = Double.random(in: riggedItem.startAngle...riggedItem.endAngle)
+        let adjustedTarget = (360 - (targetAngle + 90)).truncatingRemainder(dividingBy: 360)
+        
+        let cheatRotation = 1080.0 // 3回転
+        let finalTarget = startRotation + cheatRotation + adjustedTarget
+        
+        print("✅ 3回転後インチキターゲット: \(finalTarget.truncatingRemainder(dividingBy: 360))°")
+        return finalTarget
+    }
+    
+    private func applyRotationAnimation(duration: TimeInterval, steps: Int, targetRotation: Double?) {
+        let interval = duration / Double(steps)
+        var currentStep = 0
+        var currentRotation = rotation.truncatingRemainder(dividingBy: 360)
+        let initialSpeed = (1080.0 / Double(steps)) * 5
         
         Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in
             let progress = Double(currentStep) / Double(steps)
-            
-            // 🎯 スムーズな減速ロジック
-            let speedFactor = initialSpeed * (1.0 - pow(progress, 3))
+            let speedFactor = calculateSpeedFactor(initialSpeed: initialSpeed, progress: progress)
             
             if let targetRotation = targetRotation {
                 let remainingRotation = targetRotation - currentRotation
-                if remainingRotation > 0 {
-                    currentRotation += min(speedFactor, remainingRotation * 0.1) // 目標に向かって調整
-                } else {
+                
+                if abs(remainingRotation) < 0.5 {
+                    currentRotation = targetRotation
+                    rotation = currentRotation.truncatingRemainder(dividingBy: 360)
                     timer.invalidate()
                     finalizeSelection()
                     isSpinning = false
                     return
+                } else {
+                    currentRotation += min(speedFactor, remainingRotation * 0.15)
                 }
             } else {
-                currentRotation += speedFactor // 通常モードの回転
+                currentRotation += speedFactor
             }
             
-            rotation = currentRotation
+            rotation = currentRotation.truncatingRemainder(dividingBy: 360)
             
             if currentStep >= steps {
                 timer.invalidate()
@@ -155,6 +169,10 @@ struct ContentView: View {
             
             currentStep += 1
         }
+    }
+    
+    private func calculateSpeedFactor(initialSpeed: Double, progress: Double) -> Double {
+        return initialSpeed * (1.0 - pow(progress, 3))
     }
     
     private func finalizeSelection() {
