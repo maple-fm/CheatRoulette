@@ -10,19 +10,11 @@ import SwiftData
 
 struct ContentView: View {
     @Environment(\.modelContext) private var modelContext
-    @State private var items: [Item] = [] // データベースには保存せず、UI上のみで管理
-    @Query private var templates: [Template]
-    @State private var selectedTemplate: Template?
-    
-    @State private var rotation: Double = 0
-    @State private var selectedItem: String = "選ばれた項目名"
-    @State private var isCheatMode: Bool = false // インチキモード
-    @State private var isSpinning: Bool = false // ルーレットが回転中かどうかを管理
     @State private var isShowingNewItemView = false
     @State private var isShowingEditView = false
     @State private var isSelectingTemplate = false // テンプレート選択画面の表示管理
     
-    @State private var riggedItemID: UUID? // インチキする項目のID
+    @StateObject private var viewModel = RouletteViewModel()
     
     
     var body: some View {
@@ -30,21 +22,21 @@ struct ContentView: View {
             Spacer()
             
             // 選ばれた項目ラベル
-            Text(selectedItem)
+            Text(viewModel.selectedItem)
                 .font(.title)
                 .padding()
             
             ZStack {
                 ZStack {
                     // ルーレット
-                    RouletteWheel(items: items, rotation: rotation)
+                    RouletteWheel(items: viewModel.items, rotation: viewModel.rotation)
                         .frame(width: 300, height: 300)
                     
                     // 🎯 ルーレットの中央にボタンを配置
                     Button(action: {
                         // アイテムの角度を更新する
                         updateItemAngles()
-                        startSpinning()
+                        viewModel.startSpinning()
                         
                     }) {
                         Circle()
@@ -67,7 +59,7 @@ struct ContentView: View {
             }
             
             HStack {
-                Toggle("インチキモード", isOn: $isCheatMode)
+                Toggle("インチキモード", isOn: $viewModel.isCheatMode)
                     .padding()
             }
             .padding()
@@ -81,7 +73,7 @@ struct ContentView: View {
             }
             .padding()
             .sheet(isPresented: $isShowingNewItemView) {
-                AddView(items: $items)
+                AddView(items: $viewModel.items)
             }
             
             Button("項目を編集する") {
@@ -89,7 +81,7 @@ struct ContentView: View {
             }
             .padding()
             .sheet(isPresented: $isShowingEditView) {
-                ItemEditView(items: $items, riggedItemID: $riggedItemID)
+                ItemEditView(items: $viewModel.items, riggedItemID: $viewModel.riggedItemID)
             }
             
             Button("テンプレートを選択") {
@@ -103,104 +95,15 @@ struct ContentView: View {
         }
     }
     
-    private func startSpinning() {
-        guard !isSpinning, !items.isEmpty else { return } // 空なら回さない
-        isSpinning = true
-        
-        // 🎯 ルーレットの回転角をリセット
-        if isCheatMode {
-            rotation = 0
-        }
-        let baseRotation: Double = Double.random(in: 770...1440) // 最低4回転
-        let duration: TimeInterval = Double.random(in: 4.0...9.0) // 4〜9秒のランダム時間
-        let steps = 100 // 減速ステップ数
-        
-        let startRotation = rotation.truncatingRemainder(dividingBy: 360) // 現在の角度
-        let targetRotation = calculateTargetRotation(baseRotation: baseRotation, startRotation: startRotation)
-        
-        applyRotationAnimation(duration: duration, steps: steps, targetRotation: targetRotation)
-    }
-    
-    private func calculateTargetRotation(baseRotation: Double, startRotation: Double) -> Double? {
-        guard isCheatMode, let riggedID = riggedItemID, let riggedItem = items.first(where: { $0.id == riggedID }) else {
-            return nil
-        }
-        
-        let targetAngle = Double.random(in: riggedItem.startAngle...riggedItem.endAngle)
-        let adjustedTarget = (360 - (targetAngle + 90)).truncatingRemainder(dividingBy: 360)
-        
-        let cheatRotation = 1080.0 // 3回転
-        let finalTarget = startRotation + cheatRotation + adjustedTarget
-        
-        return finalTarget
-    }
-    
-    private func applyRotationAnimation(duration: TimeInterval, steps: Int, targetRotation: Double?) {
-        let interval = duration / Double(steps)
-        var currentStep = 0
-        var currentRotation = rotation.truncatingRemainder(dividingBy: 360)
-        let initialSpeed = (1080.0 / Double(steps)) * 5
-        
-        Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in
-            let progress = Double(currentStep) / Double(steps)
-            let speedFactor = calculateSpeedFactor(initialSpeed: initialSpeed, progress: progress)
-            
-            if let targetRotation = targetRotation {
-                let remainingRotation = targetRotation - currentRotation
-                
-                if abs(remainingRotation) < 0.5 {
-                    currentRotation = targetRotation
-                    rotation = currentRotation.truncatingRemainder(dividingBy: 360)
-                    timer.invalidate()
-                    finalizeSelection()
-                    isSpinning = false
-                    return
-                } else {
-                    currentRotation += min(speedFactor, remainingRotation * 0.15)
-                }
-            } else {
-                currentRotation += speedFactor
-            }
-            
-            rotation = currentRotation.truncatingRemainder(dividingBy: 360)
-            
-            if currentStep >= steps {
-                timer.invalidate()
-                finalizeSelection()
-                isSpinning = false
-            }
-            
-            currentStep += 1
-        }
-    }
-    
-    private func calculateSpeedFactor(initialSpeed: Double, progress: Double) -> Double {
-        return initialSpeed * (1.0 - pow(progress, 3))
-    }
-    
-    private func finalizeSelection() {
-        let finalRotation = rotation.truncatingRemainder(dividingBy: 360)
-        let adjustedRotation = (finalRotation + 90).truncatingRemainder(dividingBy: 360)
-        let correctedRotation = (360 - adjustedRotation).truncatingRemainder(dividingBy: 360)
-        
-        // 回転角度に基づいて、現在の位置がどの項目に対応しているかを判定
-        if let selected = items.first(where: { $0.startAngle <= correctedRotation && correctedRotation < $0.endAngle }) {
-            selectedItem = selected.name
-        } else {
-            // 何も見つからない場合は、"選ばれた項目名"を表示
-            selectedItem = "選ばれた項目名"
-        }
-    }
-    
     private func removeAll() {
-        items.removeAll()
+        viewModel.items.removeAll()
     }
     
     // ルーレットが回り始める時に角度を更新するメソッド
     private func updateItemAngles() {
-        let segmentAngle = 360.0 / Double(items.count)
+        let segmentAngle = 360.0 / Double(viewModel.items.count)
         
-        for (index, item) in items.enumerated() {
+        for (index, item) in viewModel.items.enumerated() {
             let newStartAngle = segmentAngle * Double(index)
             let newEndAngle = newStartAngle + segmentAngle
             
@@ -214,7 +117,7 @@ struct ContentView: View {
     }
     
     private func applyTemplate(_ template: Template) {
-        items = template.items.map { item in
+        viewModel.items = template.items.map { item in
             Item(name: item.name, startAngle: 0, endAngle: 0, color: item.color) // 新しいItemとして作成
         }
     }
