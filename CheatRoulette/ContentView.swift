@@ -21,16 +21,20 @@ struct ContentView: View {
         VStack {
             Spacer()
             
-            // 選ばれた項目ラベル
-            Text(viewModel.selectedItem)
+            Text(viewModel.title)
                 .font(.title)
-                .padding()
             
             ZStack {
                 ZStack {
                     // ルーレット
-                    RouletteWheel(items: viewModel.items, rotation: viewModel.rotation)
-                        .frame(width: 300, height: 300)
+                    if viewModel.items.isEmpty {
+                        Circle()
+                            .foregroundStyle(.gray)
+                            .frame(width: 300, height: 300)
+                    } else {
+                        RouletteWheel(items: viewModel.items, rotation: viewModel.rotation)
+                            .frame(width: 300, height: 300)
+                    }
                     
                     // 🎯 ルーレットの中央にボタンを配置
                     Button(action: {
@@ -39,16 +43,14 @@ struct ContentView: View {
                         viewModel.startSpinning()
                         
                     }) {
-                        Circle()
-                            .fill(Color.white)
+                       Text("Start")
+                            .fontWeight(.bold)
+                            .font(.system(size: 24))
                             .frame(width: 150, height: 150)
-                            .overlay(
-                                Text("回す")
-                                    .foregroundColor(.black)
-                                    .font(.title)
-                                    .bold()
-                            )
+                            .background(.white)
+                            .cornerRadius(999)
                     }
+                    .buttonStyle(.plain)
                 }
                 
                 // 矢印
@@ -56,6 +58,15 @@ struct ContentView: View {
                     .fill(Color.black)
                     .frame(width: 30, height: 30)
                     .offset(y: -150) // ルーレットの上に配置
+            }
+            
+            Spacer()
+            
+            // 選ばれた項目ラベル
+            if let result = viewModel.selectedItem {
+                Text("結果: \(result)")
+                    .font(.title)
+                    .padding()
             }
             
             HStack {
@@ -70,10 +81,11 @@ struct ContentView: View {
             // データ追加ボタン
             Button("データを追加する") {
                 isShowingNewItemView = true
+                viewModel.title = ""
             }
             .padding()
             .sheet(isPresented: $isShowingNewItemView) {
-                AddView(items: $viewModel.items)
+                AddView(items: $viewModel.items, rouletteName: $viewModel.title)
             }
             
             Button("項目を編集する") {
@@ -117,6 +129,7 @@ struct ContentView: View {
     }
     
     private func applyTemplate(_ template: Template) {
+        viewModel.title = template.name
         viewModel.items = template.items.map { item in
             Item(name: item.name, startAngle: 0, endAngle: 0, color: item.color) // 新しいItemとして作成
         }

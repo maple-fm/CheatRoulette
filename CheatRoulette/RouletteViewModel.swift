@@ -13,9 +13,10 @@ class RouletteViewModel: ObservableObject {
     @Published var selectedTemplate: Template?
     
     @Published var rotation: Double = 0
-    @Published var selectedItem: String = "選ばれた項目名"
+    @Published var selectedItem: String?
     @Published var isCheatMode: Bool = false // インチキモード
     @Published var isSpinning: Bool = false // ルーレットが回転中かどうかを管理
+    @Published var title: String = ""
     
     @Published var riggedItemID: UUID? // インチキする項目のID
     

@@ -24,12 +24,6 @@ struct ItemEditView: View {
                     List {
                         ForEach(items) { item in
                             HStack {
-                                TextField("項目名", text: Binding(
-                                    get: { item.name },
-                                    set: { item.name = $0 }
-                                ))
-                                
-                                Spacer()
                                 
                                 // インチキ項目を選択するラジオボタン
                                 Button(action: {
@@ -42,6 +36,15 @@ struct ItemEditView: View {
                                     Image(systemName: riggedItemID == item.id ? "largecircle.fill.circle" : "circle")
                                         .foregroundColor(.blue)
                                 }
+                                
+                                TextField("項目名", text: Binding(
+                                    get: { item.name },
+                                    set: { item.name = $0 }
+                                ))
+                                
+                                Spacer()
+                                
+                                
                             }
                         }
                         .onDelete(perform: deleteItem) // スワイプ削除

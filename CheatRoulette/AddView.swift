@@ -18,17 +18,28 @@ struct AddView: View {
     @State private var showCancelAlert = false // キャンセル確認のポップアップ
     @State private var tempItems: [Item] = [] // 編集用の一時データ
     
+    @Binding var rouletteName: String
+    
     var body: some View {
         NavigationStack {
             Form {
-                Button("追加") {
-                    let newItem = Item(name: "\(tempItems.count + 1)", startAngle: 0, endAngle: 0, color: .random())
-                    tempItems.append(newItem) // UI 上のみで管理
+                
+                // 🔥 ルーレット名の入力フィールドを追加
+                Section(header: Text("ルーレット名")) {
+                    TextField("ルーレットの名前を入力", text: $rouletteName)
+                        .textFieldStyle(.roundedBorder)
                 }
                 
-                Button("テンプレートとして保存") {
-                    templateName = "" // 初期化
-                    showSaveAlert = true  // アラートを表示
+                Section {
+                    Button("追加") {
+                        let newItem = Item(name: "\(tempItems.count + 1)", startAngle: 0, endAngle: 0, color: .random())
+                        tempItems.append(newItem) // UI 上のみで管理
+                    }
+                    
+                    Button("テンプレートとして保存") {
+                        templateName = "" // 初期化
+                        showSaveAlert = true  // アラートを表示
+                    }
                 }
                 
                 Section(header: Text("追加された項目")) {
@@ -92,5 +103,5 @@ struct AddView: View {
 }
 
 #Preview {
-    AddView(items: .constant([]))
+    AddView(items: .constant([]), rouletteName: .constant("タイトル"))
 }
