@@ -14,11 +14,14 @@ class RouletteViewModel: ObservableObject {
     
     @Published var rotation: Double = 0
     @Published var selectedItem: String?
-    @Published var isCheatMode: Bool = false // インチキモード
     @Published var isSpinning: Bool = false // ルーレットが回転中かどうかを管理
     @Published var title: String = ""
     
-    @Published var riggedItemID: UUID? // インチキする項目のID
+    @Published var cheatItemID: UUID? // インチキする項目のID
+    
+    var isCheatMode: Bool {
+        return cheatItemID != nil
+    }
     
     func startSpinning() {
         guard !isSpinning, !items.isEmpty else { return } // 空なら回さない
@@ -39,7 +42,7 @@ class RouletteViewModel: ObservableObject {
     }
     
     private func calculateTargetRotation(baseRotation: Double, startRotation: Double) -> Double? {
-        guard isCheatMode, let riggedID = riggedItemID, let riggedItem = items.first(where: { $0.id == riggedID }) else {
+        guard isCheatMode, let riggedID = cheatItemID, let riggedItem = items.first(where: { $0.id == riggedID }) else {
             return nil
         }
         

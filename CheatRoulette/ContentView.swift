@@ -16,6 +16,7 @@ struct ContentView: View {
     
     @StateObject private var viewModel = RouletteViewModel()
     
+    private let width = UIScreen.main.bounds.width - (15 * 2)
     
     var body: some View {
         VStack {
@@ -30,10 +31,10 @@ struct ContentView: View {
                     if viewModel.items.isEmpty {
                         Circle()
                             .foregroundStyle(.gray)
-                            .frame(width: 300, height: 300)
+                            .frame(width: width, height: width)
                     } else {
                         RouletteWheel(items: viewModel.items, rotation: viewModel.rotation)
-                            .frame(width: 300, height: 300)
+                            .frame(width: width, height: width)
                     }
                     
                     // 🎯 ルーレットの中央にボタンを配置
@@ -45,8 +46,8 @@ struct ContentView: View {
                     }) {
                        Text("Start")
                             .fontWeight(.bold)
-                            .font(.system(size: 24))
-                            .frame(width: 150, height: 150)
+                            .font(.system(size: 36))
+                            .frame(width: width * (2 / 3), height: width * (2/3))
                             .background(.white)
                             .cornerRadius(999)
                     }
@@ -57,10 +58,8 @@ struct ContentView: View {
                 Triangle()
                     .fill(Color.black)
                     .frame(width: 30, height: 30)
-                    .offset(y: -150) // ルーレットの上に配置
+                    .offset(y: -180) // ルーレットの上に配置
             }
-            
-            Spacer()
             
             // 選ばれた項目ラベル
             if let result = viewModel.selectedItem {
@@ -70,11 +69,11 @@ struct ContentView: View {
             }
             
             HStack {
-                Toggle("インチキモード", isOn: $viewModel.isCheatMode)
-                    .padding()
+                Text("インチキモード: ")
+                
+                Text(viewModel.isCheatMode ? "ON" : "OFF")
             }
             .padding()
-            .buttonStyle(.borderedProminent)
             
             Spacer()
             
@@ -93,7 +92,7 @@ struct ContentView: View {
             }
             .padding()
             .sheet(isPresented: $isShowingEditView) {
-                ItemEditView(items: $viewModel.items, riggedItemID: $viewModel.riggedItemID)
+                ItemEditView(items: $viewModel.items, riggedItemID: $viewModel.cheatItemID)
             }
             
             Button("テンプレートを選択") {

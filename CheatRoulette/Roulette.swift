@@ -24,7 +24,7 @@ struct RouletteWheel: View {
                     .overlay(
                         GeometryReader { geometry in
                             let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
-                            let radius = min(geometry.size.width, geometry.size.height) / 2 * 0.7 // 🎯 文字の配置
+                            let radius = min(geometry.size.width, geometry.size.height) / 2 * 0.8 // 🎯 文字の配置
                             let textPosition = CGPoint(
                                 x: center.x + radius * cos(CGFloat(midAngle.radians)),
                                 y: center.y + radius * sin(CGFloat(midAngle.radians))

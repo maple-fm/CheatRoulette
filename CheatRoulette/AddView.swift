@@ -11,14 +11,11 @@ struct AddView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Binding var items: [Item]
-    
-    @State private var showSaveAlert = false // ポップアップ表示状態
-    @State private var templateName = "" // 入力されたテンプレート名
+    @Binding var rouletteName: String
     
     @State private var showCancelAlert = false // キャンセル確認のポップアップ
     @State private var tempItems: [Item] = [] // 編集用の一時データ
-    
-    @Binding var rouletteName: String
+    @State private var shouldSaveAsTemplate = false // 🔥 チェックボックスの状態
     
     var body: some View {
         NavigationStack {
@@ -30,15 +27,17 @@ struct AddView: View {
                         .textFieldStyle(.roundedBorder)
                 }
                 
+                // 🔥 チェックボックスの代わりにアイコンを切り替える
                 Section {
-                    Button("追加") {
-                        let newItem = Item(name: "\(tempItems.count + 1)", startAngle: 0, endAngle: 0, color: .random())
-                        tempItems.append(newItem) // UI 上のみで管理
-                    }
-                    
-                    Button("テンプレートとして保存") {
-                        templateName = "" // 初期化
-                        showSaveAlert = true  // アラートを表示
+                    HStack {
+                        Text("テンプレートとして保存")
+                        Spacer()
+                        Button(action: { shouldSaveAsTemplate.toggle() }) {
+                            Image(systemName: shouldSaveAsTemplate ? "checkmark.circle.fill" : "circle")
+                                .resizable()
+                                .frame(width: 24, height: 24)
+                                .foregroundColor(shouldSaveAsTemplate ? .blue : .gray)
+                        }
                     }
                 }
                 
@@ -56,6 +55,11 @@ struct AddView: View {
                         if !tempItems.isEmpty {
                             items = tempItems
                         }
+                        
+                        if shouldSaveAsTemplate { // 🔥 チェックが入っていたらテンプレート保存
+                            saveTemplate()
+                        }
+                        
                         dismiss()
                     }
                 }
@@ -68,11 +72,14 @@ struct AddView: View {
                         }
                     }
                 }
-            }
-            .alert("テンプレート名を入力", isPresented: $showSaveAlert) {
-                TextField("テンプレート名", text: $templateName)
-                Button("保存", action: saveTemplate)
-                Button("キャンセル", role: .cancel) { }
+                
+                ToolbarItem(placement: .bottomBar) { // 下部ツールバーに追加
+                    Button("追加") {
+                        let newItem = Item(name: "\(tempItems.count + 1)", startAngle: 0, endAngle: 0, color: .random())
+                        tempItems.append(newItem) // UI 上のみで管理
+                    }
+                    
+                }
             }
             .alert("変更を破棄しますか？", isPresented: $showCancelAlert) {
                 Button("破棄", role: .destructive) { dismiss() }
@@ -82,14 +89,14 @@ struct AddView: View {
     }
     
     private func saveTemplate() {
-        guard !templateName.isEmpty else { return }
+        guard !rouletteName.isEmpty else { return }
         
         let copiedItems = tempItems.map { item in
             Item(name: item.name, startAngle: item.startAngle, endAngle: item.endAngle, color: item.color)
         }
         
         // テンプレートを作成して SwiftData に登録
-        let template = Template(name: templateName, items: copiedItems)
+        let template = Template(name: rouletteName, items: copiedItems)
         modelContext.insert(template)
         
         do {
