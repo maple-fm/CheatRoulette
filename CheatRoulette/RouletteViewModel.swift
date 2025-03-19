@@ -9,6 +9,8 @@ import SwiftUI
 import SwiftData
 
 class RouletteViewModel: ObservableObject {
+    @Environment(\.modelContext) private var modelContext
+    
     @Published var items: [Item] = [] // データベースには保存せず、UI上のみで管理
     @Published var selectedTemplate: Template?
     
@@ -26,6 +28,7 @@ class RouletteViewModel: ObservableObject {
     func startSpinning() {
         guard !isSpinning, !items.isEmpty else { return } // 空なら回さない
         isSpinning = true
+        updateItemAngles()
         
         // 🎯 ルーレットの回転角をリセット
         if isCheatMode {
@@ -109,6 +112,30 @@ class RouletteViewModel: ObservableObject {
         } else {
             // 何も見つからない場合は、"選ばれた項目名"を表示
             selectedItem = "選ばれた項目名"
+        }
+    }
+    
+    // ルーレットが回り始める時に角度を更新するメソッド
+    private func updateItemAngles() {
+        let segmentAngle = 360.0 / Double(items.count)
+        
+        for (index, item) in items.enumerated() {
+            let newStartAngle = segmentAngle * Double(index)
+            let newEndAngle = newStartAngle + segmentAngle
+            
+            // Model のデータを更新
+            item.startAngle = newStartAngle
+            item.endAngle = newEndAngle
+            
+            // 更新を保存
+            try? modelContext.save()
+        }
+    }
+    
+    func applyTemplate(_ template: Template) {
+        title = template.name
+        items = template.items.map { item in
+            Item(name: item.name, startAngle: 0, endAngle: 0, color: item.color) // 新しいItemとして作成
         }
     }
 }
