@@ -12,6 +12,7 @@ struct ContentView: View {
     @State private var isShowingNewItemView = false
     @State private var isShowingEditView = false
     @State private var isSelectingTemplate = false // テンプレート選択画面の表示管理
+    @State private var showOptions = false
     
     @StateObject private var viewModel = RouletteViewModel()
     
@@ -75,14 +76,12 @@ struct ContentView: View {
             Spacer()
             
             // データ追加ボタン
-            Button("データを追加する") {
-                isShowingNewItemView = true
+            Button("データをセット") {
+                showOptions = true
                 viewModel.title = ""
             }
             .padding()
-            .sheet(isPresented: $isShowingNewItemView) {
-                AddView(items: $viewModel.items, rouletteName: $viewModel.title)
-            }
+            
             
             Button("項目を編集する") {
                 isShowingEditView = true
@@ -91,14 +90,22 @@ struct ContentView: View {
             .sheet(isPresented: $isShowingEditView) {
                 ItemEditView(items: $viewModel.items, riggedItemID: $viewModel.cheatItemID)
             }
-            
-            Button("テンプレートを選択") {
-                isSelectingTemplate = true // モーダルを開く
+        }
+        .confirmationDialog("データをセット", isPresented: $showOptions, titleVisibility: .visible) {
+            Button("新規追加") {
+                isShowingNewItemView = true
             }
-            .sheet(isPresented: $isSelectingTemplate) {
-                TemplateSelectionView { selectedTemplate in
-                    viewModel.applyTemplate(selectedTemplate) // 選択したテンプレートを適用
-                }
+            Button("テンプレートを開く") {
+                isSelectingTemplate = true
+            }
+            Button("Cancel", role: .cancel) { }
+        }
+        .sheet(isPresented: $isShowingNewItemView) {
+            AddView(items: $viewModel.items, rouletteName: $viewModel.title, cheatedID: $viewModel.cheatItemID)
+        }
+        .sheet(isPresented: $isSelectingTemplate) {
+            TemplateSelectionView { selectedTemplate in
+                viewModel.applyTemplate(selectedTemplate)
             }
         }
     }
