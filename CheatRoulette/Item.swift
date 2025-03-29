@@ -10,7 +10,7 @@ import SwiftData
 import SwiftUI
 
 @Model
-final class Item {
+final class Item: Hashable {
     @Attribute(.unique) var id: UUID  // 一意な識別子
     var name: String  // 項目名
     var timestamp: Date  // 作成日時

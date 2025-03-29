@@ -13,14 +13,28 @@ struct RouletteWheel: View {
     
     var body: some View {
         ZStack {
-            let segmentAngle = 360.0 / Double(max(items.count, 1)) // 🔥 分割数を items.count に応じて決定
+            let totalRatio = items.reduce(0) { $0 + $1.ratio }
             
-            ForEach(items.indices, id: \.self) { index in
-                let startAngle = Angle(degrees: segmentAngle * Double(index))
-                let endAngle = Angle(degrees: segmentAngle * Double(index + 1))
-                let midAngle = Angle(degrees: (startAngle.degrees + endAngle.degrees) / 2) // セグメントの中央角度
+            // currentStartAngle を初期化
+            let angles = items.reduce((startAngle: 0.0, angles: [Angle]())) { result, item in
+                let segmentAngle = (item.ratio / totalRatio) * 360.0
+                let startAngle = result.startAngle
+                let endAngle = startAngle + segmentAngle
+                let angle = Angle(degrees: startAngle)
+                return (startAngle: endAngle, angles: result.angles + [angle])
+            }
+            
+            ForEach(0..<items.count, id: \.self) { index in
+                // 各アイテムの割合を元に、角度を計算
+                let segmentAngle = (items[index].ratio / totalRatio) * 360.0
+                let startAngle = angles.angles[index]
+                let endAngle = Angle(degrees: startAngle.degrees + segmentAngle)
                 
-                RouletteSegment(startAngle: startAngle, endAngle: endAngle, color: items[index].color) // 🎨 ランダムな色を適用
+                // セグメントの中央角度
+                let midAngle = Angle(degrees: (startAngle.degrees + endAngle.degrees) / 2)
+                
+                // 各セグメントの描画
+                RouletteSegment(startAngle: startAngle, endAngle: endAngle, color: items[index].color)
                     .overlay(
                         GeometryReader { geometry in
                             let center = CGPoint(x: geometry.size.width / 2, y: geometry.size.height / 2)
@@ -41,6 +55,7 @@ struct RouletteWheel: View {
         .rotationEffect(.degrees(rotation))
     }
 }
+
 
 // ルーレットのセグメント
 struct RouletteSegment: View {
