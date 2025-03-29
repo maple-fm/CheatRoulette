@@ -18,9 +18,9 @@ final class Item {
     var endAngle: Double   // ルーレット上の終了角度
     var colorHex: String   // 色を16進数文字列で保存
     var createdAt: Date // 追加順を管理
-    var ratio: Int
+    var ratio: Double
     
-    init(name: String, ratio: Int, startAngle: Double, endAngle: Double, color: Color, timestamp: Date = Date()) {
+    init(name: String, ratio: Double, startAngle: Double, endAngle: Double, color: Color, timestamp: Date = Date()) {
         self.id = UUID()
         self.name = name
         self.startAngle = startAngle
