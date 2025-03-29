@@ -117,15 +117,23 @@ class RouletteViewModel: ObservableObject {
     
     // ルーレットが回り始める時に角度を更新するメソッド
     private func updateItemAngles() {
-        let segmentAngle = 360.0 / Double(items.count)
+        let totalRatio = items.reduce(0) { $0 + $1.ratio }
+        var currentStartAngle = 0.0
         
-        for (index, item) in items.enumerated() {
-            let newStartAngle = segmentAngle * Double(index)
-            let newEndAngle = newStartAngle + segmentAngle
+        for (_, item) in items.enumerated() {
+            // 各アイテムの角度を計算
+            let segmentAngle = (item.ratio / totalRatio) * 360.0
             
-            // Model のデータを更新
+            // startAngle と endAngle を計算
+            let newStartAngle = currentStartAngle
+            let newEndAngle = currentStartAngle + segmentAngle
+            
+            // アイテムの角度を更新
             item.startAngle = newStartAngle
             item.endAngle = newEndAngle
+            
+            // 次のアイテムの開始角度を設定
+            currentStartAngle = newEndAngle
             
             // 更新を保存
             try? modelContext.save()
