@@ -89,7 +89,7 @@ struct ItemEditView: View {
         
         // SwiftData に保存するため、新しい Item インスタンスを作成
         let copiedItems = items.map { item in
-            let newItem = Item(name: item.name, startAngle: item.startAngle, endAngle: item.endAngle, color: item.color)
+            let newItem = Item(name: item.name, ratio: item.ratio, startAngle: item.startAngle, endAngle: item.endAngle, color: item.color)
             modelContext.insert(newItem)
             return newItem
         }
@@ -108,7 +108,7 @@ struct ItemEditView: View {
 
 #Preview {
     ItemEditView(items: .constant([
-        Item(name: "サンプル1", startAngle: 0, endAngle: 0, color: .red),
-        Item(name: "サンプル2", startAngle: 0, endAngle: 0, color: .blue)
+        Item(name: "サンプル1", ratio: 1, startAngle: 0, endAngle: 0, color: .red),
+        Item(name: "サンプル2", ratio: 1, startAngle: 0, endAngle: 0, color: .blue)
     ]), riggedItemID: .constant(UUID()))
 }
