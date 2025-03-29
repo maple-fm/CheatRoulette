@@ -50,6 +50,27 @@ struct AddView: View {
                         
                         Spacer()
                         
+                        // 比率入力フィールドの追加
+                        VStack {
+                            Text("比率:")
+                                .font(.footnote)
+                            
+                            TextField("1", value: $item.ratio, format: .number)
+                                .keyboardType(.numberPad)
+                                .frame(width: 60)
+                                .textFieldStyle(.roundedBorder)
+                                .onChange(of: item.ratio) { newValue in
+                                    // 比率が1〜99の範囲内か確認
+                                    if newValue < 1 {
+                                        item.ratio = 1
+                                    } else if newValue > 99 {
+                                        item.ratio = 99
+                                    }
+                                }
+                        }
+                        
+                        Spacer()
+                        
                         Button(action: {
                             cheatedID = (cheatedID == item.id) ? nil : item.id
                         }) {

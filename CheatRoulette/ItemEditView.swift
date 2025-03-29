@@ -44,7 +44,28 @@ struct ItemEditView: View {
                                 
                                 Spacer()
                                 
-                                
+                                // 比率入力フィールドの追加
+                                VStack {
+                                    Text("比率:")
+                                        .font(.footnote)
+                                    
+                                    TextField("1", value: Binding(
+                                        get: { item.ratio },
+                                        set: { newValue in
+                                            // 比率が1〜99の範囲に収まるように制限
+                                            if newValue < 1 {
+                                                item.ratio = 1
+                                            } else if newValue > 99 {
+                                                item.ratio = 99
+                                            } else {
+                                                item.ratio = newValue
+                                            }
+                                        }
+                                    ), format: .number)
+                                    .keyboardType(.numberPad)
+                                    .frame(width: 60)
+                                    .textFieldStyle(.roundedBorder)
+                                }
                             }
                         }
                         .onDelete(perform: deleteItem) // スワイプ削除
