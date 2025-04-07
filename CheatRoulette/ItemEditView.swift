@@ -13,85 +13,101 @@ struct ItemEditView: View {
     @Environment(\.modelContext) private var modelContext
     @Binding var items: [Item] // @Binding で UI 上のリストを編集
     @Binding var riggedItemID: UUID? // インチキする項目のID
+    @Binding var rouletteName: String
     
     @State private var showSaveAlert = false // アラート表示用
-    @State private var templateName = "" // 入力されたテンプレート名
+    @State  var showCancelAlert = false // キャンセル確認のポップアップ
+    @State  var shouldSaveAsTemplate = false // 🔥 チェックボックスの状態
     
     var body: some View {
-        NavigationStack {
-            Form {
-                Section(header: Text("登録済みの項目")) {
-                    List {
-                        ForEach(items) { item in
-                            HStack {
-                                
-                                // インチキ項目を選択するラジオボタン
-                                Button(action: {
-                                    if riggedItemID == item.id {
-                                        riggedItemID = nil // すでに選択済みなら解除
+        VStack {
+            // 🔥 ヘッダー部分
+            HStack {
+                
+                Spacer()
+                TextField("名称未設定", text: $rouletteName)
+                    .textFieldStyle(.roundedBorder)
+                    .frame(width: 200)
+                Spacer()
+                Button("Set") {
+                    
+                    if shouldSaveAsTemplate { // 🔥 チェックが入っていたらテンプレート保存
+                        saveTemplate()
+                    }
+                    dismiss()
+                }
+            }
+            .padding()
+            .background(Color(UIColor.systemGray5))
+            
+            List {
+                ForEach(items) { item in
+                    HStack {
+                        
+                        // インチキ項目を選択するラジオボタン
+                        Button(action: {
+                            if riggedItemID == item.id {
+                                riggedItemID = nil // すでに選択済みなら解除
+                            } else {
+                                riggedItemID = item.id
+                            }
+                        }) {
+                            Image(systemName: riggedItemID == item.id ? "largecircle.fill.circle" : "circle")
+                                .foregroundColor(.blue)
+                        }
+                        
+                        TextField("項目名", text: Binding(
+                            get: { item.name },
+                            set: { item.name = $0 }
+                        ))
+                        
+                        Spacer()
+                        
+                        // 比率入力フィールドの追加
+                        VStack {
+                            Text("比率:")
+                                .font(.footnote)
+                            
+                            TextField("1", value: Binding(
+                                get: { item.ratio },
+                                set: { newValue in
+                                    // 比率が1〜99の範囲に収まるように制限
+                                    if newValue < 1 {
+                                        item.ratio = 1
+                                    } else if newValue > 99 {
+                                        item.ratio = 99
                                     } else {
-                                        riggedItemID = item.id
+                                        item.ratio = newValue
                                     }
-                                }) {
-                                    Image(systemName: riggedItemID == item.id ? "largecircle.fill.circle" : "circle")
-                                        .foregroundColor(.blue)
                                 }
-                                
-                                TextField("項目名", text: Binding(
-                                    get: { item.name },
-                                    set: { item.name = $0 }
-                                ))
-                                
-                                Spacer()
-                                
-                                // 比率入力フィールドの追加
-                                VStack {
-                                    Text("比率:")
-                                        .font(.footnote)
-                                    
-                                    TextField("1", value: Binding(
-                                        get: { item.ratio },
-                                        set: { newValue in
-                                            // 比率が1〜99の範囲に収まるように制限
-                                            if newValue < 1 {
-                                                item.ratio = 1
-                                            } else if newValue > 99 {
-                                                item.ratio = 99
-                                            } else {
-                                                item.ratio = newValue
-                                            }
-                                        }
-                                    ), format: .number)
-                                    .keyboardType(.numberPad)
-                                    .frame(width: 60)
-                                    .textFieldStyle(.roundedBorder)
-                                }
+                            ), format: .number)
+                            .keyboardType(.numberPad)
+                            .frame(width: 60)
+                            .textFieldStyle(.roundedBorder)
                             }
                         }
-                        .onDelete(perform: deleteItem) // スワイプ削除
                     }
+                    .onDelete(perform: deleteItem) // スワイプ削除
                 }
-            }
-            .navigationTitle("項目を編集")
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("完了") { dismiss() }
-                }
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("キャンセル") { dismiss() }
-                }
-                ToolbarItem(placement: .bottomBar) { // 下部ツールバーに追加
-                    Button("テンプレートとして保存") {
-                        templateName = ""
-                        showSaveAlert = true
+                
+                // 🔥 下部の「テンプレートに登録」
+                HStack {
+                    Text("テンプレートに登録")
+                        .foregroundColor(.white)
+                        .padding(.leading)
+                    
+                    Spacer()
+                    
+                    Button(action: { shouldSaveAsTemplate.toggle() }) {
+                        Image(systemName: shouldSaveAsTemplate ? "checkmark.square.fill" : "square")
+                            .resizable()
+                            .frame(width: 24, height: 24)
+                            .foregroundColor(.white)
                     }
+                    .padding(.trailing)
                 }
-            }
-            .alert("テンプレート名を入力", isPresented: $showSaveAlert) {
-                TextField("テンプレート名", text: $templateName)
-                Button("保存", action: saveTemplate)
-                Button("キャンセル", role: .cancel) { }
-            }
+                .frame(height: 50)
+                .background(Color.red)
         }
     }
     
@@ -106,16 +122,16 @@ struct ItemEditView: View {
     }
     
     private func saveTemplate() {
-        guard !templateName.isEmpty else { return }
+        guard !rouletteName.isEmpty else { return }
         
         // SwiftData に保存するため、新しい Item インスタンスを作成
         let copiedItems = items.map { item in
-            let newItem = Item(name: item.name, ratio: item.ratio, startAngle: item.startAngle, endAngle: item.endAngle, color: item.color)
+            let newItem = Item(name: item.name, ratio: item.ratio, startAngle: item.startAngle, endAngle: item.endAngle)
             modelContext.insert(newItem)
             return newItem
         }
         
-        let template = Template(name: templateName, items: copiedItems)
+        let template = Template(name: rouletteName, items: copiedItems)
         modelContext.insert(template)
         
         do {
@@ -129,7 +145,7 @@ struct ItemEditView: View {
 
 #Preview {
     ItemEditView(items: .constant([
-        Item(name: "サンプル1", ratio: 1, startAngle: 0, endAngle: 0, color: .red),
-        Item(name: "サンプル2", ratio: 1, startAngle: 0, endAngle: 0, color: .blue)
-    ]), riggedItemID: .constant(UUID()))
+        Item(name: "サンプル1", ratio: 1, startAngle: 0, endAngle: 0),
+        Item(name: "サンプル2", ratio: 1, startAngle: 0, endAngle: 0)
+    ]), riggedItemID: .constant(UUID()), rouletteName: .constant("テンプレート"))
 }

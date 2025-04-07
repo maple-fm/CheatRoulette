@@ -105,7 +105,7 @@ struct AddView: View {
             
             // 🔥 「項目を追加」ボタン
             Button(action: {
-                let newItem = Item(name: "\(viewModel.tempItems.count + 1)", ratio: 1, startAngle: 0, endAngle: 0, color: .random())
+                let newItem = Item(name: "\(viewModel.tempItems.count + 1)", ratio: 1, startAngle: 0, endAngle: 0)
                 viewModel.tempItems.append(newItem) // UI 上のみで管理
             }) {
                 Text("項目を追加")
@@ -127,7 +127,7 @@ struct AddView: View {
         guard !rouletteName.isEmpty else { return }
         
         let copiedItems = viewModel.tempItems.map { item in
-            Item(name: item.name, ratio: item.ratio, startAngle: item.startAngle, endAngle: item.endAngle, color: item.color)
+            Item(name: item.name, ratio: item.ratio, startAngle: item.startAngle, endAngle: item.endAngle)
         }
         
         // テンプレートを作成して SwiftData に登録

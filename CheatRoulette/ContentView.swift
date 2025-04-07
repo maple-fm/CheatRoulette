@@ -66,13 +66,6 @@ struct ContentView: View {
                     .padding()
             }
             
-            HStack {
-                Text("インチキモード: ")
-                
-                Text(viewModel.isCheatMode ? "ON" : "OFF")
-            }
-            .padding()
-            
             Spacer()
             
             // データ追加ボタン
@@ -88,7 +81,7 @@ struct ContentView: View {
             }
             .padding()
             .sheet(isPresented: $isShowingEditView) {
-                ItemEditView(items: $viewModel.items, riggedItemID: $viewModel.cheatItemID)
+                ItemEditView(items: $viewModel.items, riggedItemID: $viewModel.cheatItemID, rouletteName: $viewModel.title)
             }
         }
         .confirmationDialog("データをセット", isPresented: $showOptions, titleVisibility: .visible) {

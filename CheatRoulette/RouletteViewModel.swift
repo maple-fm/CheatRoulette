@@ -143,7 +143,7 @@ class RouletteViewModel: ObservableObject {
     func applyTemplate(_ template: Template) {
         title = template.name
         items = template.items.map { item in
-            Item(name: item.name, ratio: 1, startAngle: 0, endAngle: 0, color: item.color)
+            Item(name: item.name, ratio: 1, startAngle: 0, endAngle: 0)
         }
     }
 }
