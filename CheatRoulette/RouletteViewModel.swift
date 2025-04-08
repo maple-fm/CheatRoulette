@@ -26,25 +26,37 @@ class RouletteViewModel: ObservableObject {
     }
     
     func startSpinning() {
-        guard !isSpinning, !items.isEmpty else { return } // 空なら回さない
+        guard !isSpinning, !items.isEmpty else { return }
         isSpinning = true
         updateItemAngles()
         
-        // 🎯 ルーレットの回転角をリセット
+        // ルーレットの回転角をリセット
         if isCheatMode {
             rotation = 0
         }
-        let baseRotation: Double = Double.random(in: 770...1440) // 最低4回転
-        let duration: TimeInterval = Double.random(in: 4.0...9.0) // 4〜9秒のランダム時間
-        let steps = 100 // 減速ステップ数
         
-        let startRotation = rotation.truncatingRemainder(dividingBy: 360) // 現在の角度
-        let targetRotation = calculateTargetRotation(baseRotation: baseRotation, startRotation: startRotation)
+        let baseRotation: Double
+        let duration: TimeInterval
+        let steps = 100
         
-        applyRotationAnimation(duration: duration, steps: steps, targetRotation: targetRotation)
+        let startRotation = rotation.truncatingRemainder(dividingBy: 360)
+        let targetRotation = calculateTargetRotation(startRotation: startRotation)
+        
+        if isCheatMode {
+            // インチキモード：固定3回転
+            baseRotation = 360.0 * 3
+            duration = 5.0 // 固定にするなら時間も揃えておく
+        } else {
+            // 通常モード：3回転前後 (2〜4回転くらい)
+            let randomSpinCount = Double.random(in: 2.5...4.0) // 2.5回転〜4回転
+            baseRotation = 360.0 * randomSpinCount
+            duration = Double.random(in: 4.0...6.0) // 時間も少しランダムに
+        }
+        
+        applyRotationAnimation(baseRotation: baseRotation, duration: duration, steps: steps, targetRotation: targetRotation)
     }
     
-    private func calculateTargetRotation(baseRotation: Double, startRotation: Double) -> Double? {
+    private func calculateTargetRotation(startRotation: Double) -> Double? {
         guard isCheatMode, let riggedID = cheatItemID, let riggedItem = items.first(where: { $0.id == riggedID }) else {
             return nil
         }
@@ -52,17 +64,17 @@ class RouletteViewModel: ObservableObject {
         let targetAngle = Double.random(in: riggedItem.startAngle...riggedItem.endAngle)
         let adjustedTarget = (360 - (targetAngle + 90)).truncatingRemainder(dividingBy: 360)
         
-        let cheatRotation = 1080.0 // 3回転
+        let cheatRotation = 1080.0 * 3 // 3回転
         let finalTarget = startRotation + cheatRotation + adjustedTarget
         
         return finalTarget
     }
     
-    private func applyRotationAnimation(duration: TimeInterval, steps: Int, targetRotation: Double?) {
+    private func applyRotationAnimation(baseRotation: Double, duration: TimeInterval, steps: Int, targetRotation: Double?) {
         let interval = duration / Double(steps)
         var currentStep = 0
         var currentRotation = rotation.truncatingRemainder(dividingBy: 360)
-        let initialSpeed = (1080.0 / Double(steps)) * 5
+        let initialSpeed = (baseRotation / Double(steps)) * 5  // ←ここ！
         
         Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in
             let progress = Double(currentStep) / Double(steps)
