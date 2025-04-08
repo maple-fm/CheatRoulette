@@ -22,9 +22,15 @@ struct ContentView: View {
         VStack {
             Spacer()
             
-            Text(viewModel.title)
-                .font(.title)
-            
+            if viewModel.title.isEmpty {
+                Text("名称未設定")
+                    .font(.title)
+                
+            } else {
+                Text(viewModel.title)
+                    .font(.title)
+            }
+
             ZStack {
                 ZStack {
                     // ルーレット
@@ -73,26 +79,23 @@ struct ContentView: View {
                 showOptions = true
                 viewModel.title = ""
             }
-            .padding()
+            .frame(maxWidth: .infinity)
+            .frame(height: 50)
+            .background(Color(UIColor.systemGray4))
+            .foregroundColor(.black)
             
-            
-            Button(action: {
-                isShowingEditView = true
-            }) {
-                Text("項目を編集する")
-                    .frame(maxWidth: .infinity)
-                    .frame(height: 50)
-                    .background(Color(UIColor.systemGray4))
-                    .foregroundColor(.black)
-            }
-            .sheet(isPresented: $isShowingEditView) {
-                ItemEditView(items: $viewModel.items, riggedItemID: $viewModel.cheatItemID, rouletteName: $viewModel.title)
-            }
         }
         .confirmationDialog("データをセット", isPresented: $showOptions, titleVisibility: .visible) {
             Button("新規追加") {
                 isShowingNewItemView = true
             }
+            
+            if !viewModel.items.isEmpty {
+                Button("編集する") {
+                    isShowingEditView = true
+                }
+            }
+
             Button("テンプレートを開く") {
                 isSelectingTemplate = true
             }
@@ -105,6 +108,9 @@ struct ContentView: View {
             TemplateSelectionView { selectedTemplate in
                 viewModel.applyTemplate(selectedTemplate)
             }
+        }
+        .sheet(isPresented: $isShowingEditView) {
+            ItemEditView(items: $viewModel.items, riggedItemID: $viewModel.cheatItemID, rouletteName: $viewModel.title)
         }
     }
 }
