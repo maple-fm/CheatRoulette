@@ -30,7 +30,7 @@ struct ContentView: View {
                     // ルーレット
                     if viewModel.items.isEmpty {
                         Circle()
-                            .foregroundStyle(.gray)
+                            .foregroundStyle(Color(hex: "#D9D9D9")!)
                             .frame(width: width, height: width)
                     } else {
                         RouletteWheel(items: viewModel.items, rotation: viewModel.rotation)
@@ -42,7 +42,7 @@ struct ContentView: View {
                         viewModel.startSpinning()
                         
                     }) {
-                       Text("Start")
+                       Text("START")
                             .fontWeight(.bold)
                             .font(.system(size: 36))
                             .frame(width: width * (2 / 3), height: width * (2/3))
@@ -76,10 +76,15 @@ struct ContentView: View {
             .padding()
             
             
-            Button("項目を編集する") {
+            Button(action: {
                 isShowingEditView = true
+            }) {
+                Text("項目を編集する")
+                    .frame(maxWidth: .infinity)
+                    .frame(height: 50)
+                    .background(Color(UIColor.systemGray4))
+                    .foregroundColor(.black)
             }
-            .padding()
             .sheet(isPresented: $isShowingEditView) {
                 ItemEditView(items: $viewModel.items, riggedItemID: $viewModel.cheatItemID, rouletteName: $viewModel.title)
             }

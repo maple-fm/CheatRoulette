@@ -26,7 +26,13 @@ struct CheatRouletteApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            ZStack {
+                Color(hex: "#F2F2F2")
+                    .ignoresSafeArea()
+                
+                ContentView()
+            }
+            
         }
         .modelContainer(sharedModelContainer)
     }
