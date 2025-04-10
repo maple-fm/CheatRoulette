@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import AVFoundation
 
 class RouletteViewModel: ObservableObject {
     @Environment(\.modelContext) private var modelContext
@@ -21,6 +22,8 @@ class RouletteViewModel: ObservableObject {
     
     @Published var cheatItemID: UUID? // インチキする項目のID
     
+    private var audioPlayer: AVAudioPlayer?
+    
     var isCheatMode: Bool {
         return cheatItemID != nil
     }
@@ -30,31 +33,35 @@ class RouletteViewModel: ObservableObject {
         isSpinning = true
         updateItemAngles()
         
-        // ルーレットの回転角をリセット
+        let spinDuration: Double = 11.0
+        let steps = 100
+        
+        // ドラムロール再生開始
+        playDrumRoll()
+        
+        // ルーレットの回転角をリセット（インチキモード用）
         if isCheatMode {
             rotation = 0
         }
         
-        let baseRotation: Double
-        let duration: TimeInterval
-        let steps = 100
-        
         let startRotation = rotation.truncatingRemainder(dividingBy: 360)
         let targetRotation = calculateTargetRotation(startRotation: startRotation)
         
+        let baseRotation: Double
+        
         if isCheatMode {
-            // インチキモード：固定3回転
-            baseRotation = 360.0 * 3
-            duration = 5.0 // 固定にするなら時間も揃えておく
+            // インチキモード：固定回転数
+            baseRotation = 360.0 * 3 // 3回転
         } else {
-            // 通常モード：3回転前後 (2〜4回転くらい)
-            let randomSpinCount = Double.random(in: 2.5...4.0) // 2.5回転〜4回転
-            baseRotation = 360.0 * randomSpinCount
-            duration = Double.random(in: 4.0...6.0) // 時間も少しランダムに
+            // 通常モード：自由に回転数設定
+            let spinCount = 7.0 // ここで好きな回転数に設定（例：8回転）
+            baseRotation = 360.0 * spinCount
         }
         
-        applyRotationAnimation(baseRotation: baseRotation, duration: duration, steps: steps, targetRotation: targetRotation)
+        // アニメーションスタート（durationは常に11秒固定）
+        applyRotationAnimation(baseRotation: baseRotation, duration: spinDuration, steps: steps, targetRotation: targetRotation)
     }
+
     
     private func calculateTargetRotation(startRotation: Double) -> Double? {
         guard isCheatMode, let riggedID = cheatItemID, let riggedItem = items.first(where: { $0.id == riggedID }) else {
@@ -101,6 +108,7 @@ class RouletteViewModel: ObservableObject {
             
             if currentStep >= steps {
                 timer.invalidate()
+                self.audioPlayer?.stop() // ←ドラムロール停止！
                 self.finalizeSelection()
                 self.isSpinning = false
             }
@@ -156,6 +164,17 @@ class RouletteViewModel: ObservableObject {
         title = template.name
         items = template.items.map { item in
             Item(name: item.name, ratio: 1, startAngle: 0, endAngle: 0)
+        }
+    }
+    
+    private func playDrumRoll() {
+        let musicData=NSDataAsset(name: "drumRoll")!.data
+        
+        do {
+            audioPlayer = try AVAudioPlayer(data:musicData)
+            audioPlayer?.play()
+        } catch {
+            print("ドラムロールの再生に失敗しました: \(error.localizedDescription)")
         }
     }
 }
