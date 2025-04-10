@@ -22,25 +22,26 @@ final class Item: Hashable {
     
     // 🎨 固定カラーパレット
     static let palette: [Color] = [
-        Color(hex: "#FEC400"),
-        Color(hex: "#FF7300"),
-        Color(hex: "#FF2700"),
-        Color(hex: "#FF33B0"),
-        Color(hex: "#BF39FC"),
-        Color(hex: "#6434FC"),
-        Color(hex: "#0188FD"),
-        Color(hex: "#00D4FC"),
-        Color(hex: "#00F78E"),
-        Color(hex: "#EB82F9"),
-        Color(hex: "#7A7FF7"),
-        Color(hex: "#FFD478"),
-        Color(hex: "#FF7E79"),
-        Color(hex: "#E94790"),
-        Color(hex: "#1944F5"),
+        Color(hex: "#F6D04D"),
+        Color(hex: "#F17C32"),
+        Color(hex: "#EA3E24"),
+        Color(hex: "#ED4CA5"),
+        Color(hex: "#B755F6"),
+        Color(hex: "#662BF2"),
+        Color(hex: "#3E98F1"),
+        Color(hex: "#5DD9F9"),
+        Color(hex: "#72F4A0"),
+        Color(hex: "#DA8EF9"),
+        Color(hex: "#7F84F9"),
+        Color(hex: "#F6D287"),
+        Color(hex: "#ED8983"),
+        Color(hex: "#D15782"),
+        Color(hex: "#123BF2"),
         Color(hex: "#8C8C8C")  // グレー
     ].compactMap { $0 } // nil防止
-    // 🪄 直前に選んだ色を保存する static 変数
-    private static var lastColorHex: String?
+    
+    // 🪄 最後に使ったインデックスを保存
+    private static var lastColorIndex: Int = -1  // 最初はまだ何も使ってないので -1
     
     init(name: String, ratio: Double, startAngle: Double, endAngle: Double, timestamp: Date = Date()) {
         self.id = UUID()
@@ -50,13 +51,10 @@ final class Item: Hashable {
         self.timestamp = timestamp
         self.createdAt = Date()
         self.ratio = ratio
-        
-        // 🎯 ここで「連続しない色」を選ぶ
-        let randomColor = Item.randomNonRepeatingColor()
-        self.colorHex = randomColor.toHex()
-        
-        // 最後に選んだ色を更新
-        Item.lastColorHex = self.colorHex
+    
+        // 🎯 次の色を順番に取得
+        let nextColor = Item.nextSequentialColor()
+        self.colorHex = nextColor.toHex()
     }
     
     // 色を取得する computed property
@@ -64,15 +62,13 @@ final class Item: Hashable {
         Color(hex: colorHex) ?? .gray
     }
     
-    // 🎯 連続しない色を選ぶ static 関数
-    private static func randomNonRepeatingColor() -> Color {
-        // 前回と違う色だけフィルタ
-        let availableColors = palette.filter { $0.toHex() != lastColorHex }
-        
-        // もしフィルタ後に空になったら、全色から選び直す
-        let colorsToChooseFrom = availableColors.isEmpty ? palette : availableColors
-        
-        return colorsToChooseFrom.randomElement() ?? .gray
+    // 🎯 順番に色を取得する
+    private static func nextSequentialColor() -> Color {
+        lastColorIndex += 1
+        if lastColorIndex >= palette.count {
+            lastColorIndex = 0 // 最後まで行ったら最初に戻る
+        }
+        return palette[lastColorIndex]
     }
 }
 
