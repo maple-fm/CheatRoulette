@@ -21,6 +21,7 @@ class RouletteViewModel: ObservableObject {
     @Published var title: String = ""
     
     @Published var cheatItemID: UUID? // インチキする項目のID
+    @Published var isMuted: Bool = false
     
     private var audioPlayer: AVAudioPlayer?
     
@@ -168,6 +169,8 @@ class RouletteViewModel: ObservableObject {
     }
     
     private func playDrumRoll() {
+        guard !isMuted else { return }
+        
         let musicData=NSDataAsset(name: "drumRoll")!.data
         
         do {
