@@ -37,10 +37,12 @@ struct ContentView: View {
                 if viewModel.title.isEmpty {
                     Text("名称未設定")
                         .font(.title)
+                        .padding(.bottom, 25)
                     
                 } else {
                     Text(viewModel.title)
                         .font(.title)
+                        .padding(.bottom, 25)
                 }
                 
                 ZStack {
@@ -49,10 +51,10 @@ struct ContentView: View {
                         if viewModel.items.isEmpty {
                             Circle()
                                 .foregroundStyle(Color(hex: "#D9D9D9")!)
-                                .frame(width: width, height: width)
+                                .frame(width: 303, height: 303)
                         } else {
                             RouletteWheel(items: viewModel.items, rotation: viewModel.rotation)
-                                .frame(width: width, height: width)
+                                .frame(width: 303, height: 303)
                         }
                         
                         // 🎯 ルーレットの中央にボタンを配置
@@ -61,10 +63,9 @@ struct ContentView: View {
                             
                         }) {
                             Text("START")
-                                .fontWeight(.bold)
                                 .font(.system(size: 36))
-                                .frame(width: width * (2 / 3), height: width * (2/3))
-                                .background(.white)
+                                .frame(width: 160, height: 160)
+                                .background(Color(hex: "F2F2F2"))
                                 .cornerRadius(999)
                         }
                         .buttonStyle(.plain)
@@ -72,9 +73,9 @@ struct ContentView: View {
                     
                     // 矢印
                     Triangle()
-                        .fill(Color.black)
+                        .fill(Color.red)
                         .frame(width: 30, height: 30)
-                        .offset(y: -180) // ルーレットの上に配置
+                        .offset(y: -160) // ルーレットの上に配置
                 }
                 
                 // 選ばれた項目ラベル
