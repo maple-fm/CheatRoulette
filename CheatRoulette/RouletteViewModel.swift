@@ -12,43 +12,37 @@ import AVFoundation
 class RouletteViewModel: ObservableObject {
     @Environment(\.modelContext) private var modelContext
     
-    @Published var items: [Item] = [] // データベースには保存せず、UI上のみで管理
-    @Published var selectedTemplate: Template?
+    // MARK: - Published Properties
     
+    @Published var items: [Item] = []
+    @Published var selectedTemplate: Template?
     @Published var rotation: Double = 0
     @Published var selectedItem: String?
-    @Published var isSpinning: Bool = false // ルーレットが回転中かどうかを管理
+    @Published var isSpinning: Bool = false
     @Published var title: String = ""
-    
-    @Published var cheatItemID: UUID? // インチキする項目のID
+    @Published var cheatItemID: UUID?
     @Published var isMuted: Bool = false
     
-    private var audioPlayer: AVAudioPlayer?
-    private var audioEngine: AVAudioEngine?
-    private var playerNode: AVAudioPlayerNode?
-    private var timePitch: AVAudioUnitTimePitch?
+    // MARK: - Private Properties
     
-    var isCheatMode: Bool {
-        return cheatItemID != nil
+    private var soundPlayer = SoundPlayer()
+    
+    private var isCheatMode: Bool {
+        cheatItemID != nil
     }
+    
+    // MARK: - Public Methods
     
     func startSpinning() {
         guard !isSpinning, !items.isEmpty else { return }
+        
         isSpinning = true
         updateItemAngles()
+        soundPlayer.playDrumRoll(isMuted: isMuted)
         
-        var spinDuration: Double
-        if isCheatMode {
-            spinDuration = 15.0
-        } else {
-            spinDuration = 11.0
-        }
+        let spinDuration = isCheatMode ? 15.0 : 11.0
         let steps = 100
         
-        // ドラムロール再生開始
-        playDrumRoll()
-        
-        // ルーレットの回転角をリセット（インチキモード用）
         if isCheatMode {
             rotation = 0
         }
@@ -56,32 +50,35 @@ class RouletteViewModel: ObservableObject {
         let startRotation = rotation.truncatingRemainder(dividingBy: 360)
         let targetRotation = calculateTargetRotation(startRotation: startRotation)
         
-        let baseRotation: Double
-        
-        if isCheatMode {
-            baseRotation = 360.0 * 3 // 3回転
-        } else {
-            let spinCount = 3.0
-            baseRotation = 360.0 * spinCount
-        }
-        
-        // アニメーションスタート（durationは常に11秒固定）
-        applyRotationAnimation(baseRotation: baseRotation, duration: spinDuration, steps: steps, targetRotation: targetRotation)
+        let baseRotation = isCheatMode ? 360.0 * 3 : 360.0 * 3 // 3回転
+        applyRotationAnimation(
+            baseRotation: baseRotation,
+            duration: spinDuration,
+            steps: steps,
+            targetRotation: targetRotation
+        )
     }
-
+    
+    func applyTemplate(_ template: Template) {
+        title = template.name
+        items = template.items.map { item in
+            Item(name: item.name, ratio: 1, startAngle: 0, endAngle: 0)
+        }
+    }
+    
+    // MARK: - Private Methods
     
     private func calculateTargetRotation(startRotation: Double) -> Double? {
-        guard isCheatMode, let riggedID = cheatItemID, let riggedItem = items.first(where: { $0.id == riggedID }) else {
+        guard isCheatMode,
+              let riggedID = cheatItemID,
+              let riggedItem = items.first(where: { $0.id == riggedID }) else {
             return nil
         }
         
-        let targetAngle = Double.random(in: riggedItem.startAngle...riggedItem.endAngle)
-        let adjustedTarget = (360 - (targetAngle + 90)).truncatingRemainder(dividingBy: 360)
-        
-        let cheatRotation = 1080.0 * 1 // 3回転
-        let finalTarget = startRotation + cheatRotation + adjustedTarget
-        
-        return finalTarget
+        let randomAngle = Double.random(in: riggedItem.startAngle...riggedItem.endAngle)
+        let adjustedTarget = (360 - (randomAngle + 90)).truncatingRemainder(dividingBy: 360)
+        let cheatRotation = 1080.0 // 3回転
+        return startRotation + cheatRotation + adjustedTarget
     }
     
     private func applyRotationAnimation(baseRotation: Double, duration: TimeInterval, steps: Int, targetRotation: Double?) {
@@ -96,13 +93,11 @@ class RouletteViewModel: ObservableObject {
             
             if let targetRotation = targetRotation {
                 let remainingRotation = targetRotation - currentRotation
-                
                 if abs(remainingRotation) < 0.5 {
                     currentRotation = targetRotation
                     self.rotation = currentRotation.truncatingRemainder(dividingBy: 360)
                     timer.invalidate()
-                    self.finalizeSelection()
-                    self.isSpinning = false
+                    self.finishSpin()
                     return
                 } else {
                     currentRotation += min(speedFactor, remainingRotation * 0.15)
@@ -115,9 +110,7 @@ class RouletteViewModel: ObservableObject {
             
             if currentStep >= steps {
                 timer.invalidate()
-                self.audioPlayer?.stop() // ←ドラムロール停止！
-                self.finalizeSelection()
-                self.isSpinning = false
+                self.finishSpin()
             }
             
             currentStep += 1
@@ -128,62 +121,56 @@ class RouletteViewModel: ObservableObject {
         return initialSpeed * (1.0 - pow(progress, 3))
     }
     
+    private func finishSpin() {
+        finalizeSelection()
+        isSpinning = false
+        soundPlayer.stop()
+    }
+    
     private func finalizeSelection() {
         let finalRotation = rotation.truncatingRemainder(dividingBy: 360)
         let adjustedRotation = (finalRotation + 90).truncatingRemainder(dividingBy: 360)
         let correctedRotation = (360 - adjustedRotation).truncatingRemainder(dividingBy: 360)
         
-        // 回転角度に基づいて、現在の位置がどの項目に対応しているかを判定
         if let selected = items.first(where: { $0.startAngle <= correctedRotation && correctedRotation < $0.endAngle }) {
             selectedItem = selected.name
         } else {
-            // 何も見つからない場合は、"選ばれた項目名"を表示
             selectedItem = "選ばれた項目名"
         }
     }
     
-    // ルーレットが回り始める時に角度を更新するメソッド
     private func updateItemAngles() {
         let totalRatio = items.reduce(0) { $0 + $1.ratio }
         var currentStartAngle = 0.0
         
-        for (_, item) in items.enumerated() {
-            // 各アイテムの角度を計算
+        for item in items {
             let segmentAngle = (item.ratio / totalRatio) * 360.0
+            item.startAngle = currentStartAngle
+            item.endAngle = currentStartAngle + segmentAngle
+            currentStartAngle += segmentAngle
             
-            // startAngle と endAngle を計算
-            let newStartAngle = currentStartAngle
-            let newEndAngle = currentStartAngle + segmentAngle
-            
-            // アイテムの角度を更新
-            item.startAngle = newStartAngle
-            item.endAngle = newEndAngle
-            
-            // 次のアイテムの開始角度を設定
-            currentStartAngle = newEndAngle
-            
-            // 更新を保存
             try? modelContext.save()
         }
     }
+}
+
+// MARK: - SoundPlayer
+
+private class SoundPlayer {
+    private var audioPlayer: AVAudioPlayer?
     
-    func applyTemplate(_ template: Template) {
-        title = template.name
-        items = template.items.map { item in
-            Item(name: item.name, ratio: 1, startAngle: 0, endAngle: 0)
-        }
-    }
-    
-    private func playDrumRoll() {
-        guard !isMuted else { return }
-        
-        let musicData=NSDataAsset(name: "drumRoll")!.data
+    func playDrumRoll(isMuted: Bool) {
+        guard !isMuted, let data = NSDataAsset(name: "drumRoll")?.data else { return }
         
         do {
-            audioPlayer = try AVAudioPlayer(data:musicData)
+            audioPlayer = try AVAudioPlayer(data: data)
             audioPlayer?.play()
         } catch {
             print("ドラムロールの再生に失敗しました: \(error.localizedDescription)")
         }
+    }
+    
+    func stop() {
+        audioPlayer?.stop()
     }
 }

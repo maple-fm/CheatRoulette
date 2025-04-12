@@ -83,6 +83,7 @@ struct AddView: View {
                     .padding(.vertical, 5)
                 }
             }
+            .listStyle(.plain)
             
             // 🔥 下部の「テンプレートに登録」
             HStack {

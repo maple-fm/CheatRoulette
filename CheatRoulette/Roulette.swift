@@ -51,6 +51,10 @@ struct RouletteWheel: View {
                         }
                     )
             }
+            
+            Circle()
+                .foregroundStyle(.white)
+                .frame(width: 160, height: 160)
         }
         .rotationEffect(.degrees(rotation))
     }

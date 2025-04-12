@@ -83,6 +83,10 @@ struct ContentView: View {
                     Text("結果: \(result)")
                         .font(.title)
                         .padding()
+                } else {
+                    Text("")
+                        .font(.title)
+                        .padding()
                 }
                 
                 Spacer()

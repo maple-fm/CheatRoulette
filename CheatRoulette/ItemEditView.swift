@@ -60,6 +60,8 @@ struct ItemEditView: View {
                             get: { item.name },
                             set: { item.name = $0 }
                         ))
+                        .textFieldStyle(.roundedBorder)
+                        .frame(maxWidth: .infinity)
                         
                         Spacer()
                         
@@ -89,6 +91,7 @@ struct ItemEditView: View {
                     }
                     .onDelete(perform: deleteItem) // スワイプ削除
                 }
+                .listStyle(.plain)
                 
                 // 🔥 下部の「テンプレートに登録」
                 HStack {
