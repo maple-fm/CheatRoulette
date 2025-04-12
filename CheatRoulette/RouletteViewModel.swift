@@ -24,6 +24,9 @@ class RouletteViewModel: ObservableObject {
     @Published var isMuted: Bool = false
     
     private var audioPlayer: AVAudioPlayer?
+    private var audioEngine: AVAudioEngine?
+    private var playerNode: AVAudioPlayerNode?
+    private var timePitch: AVAudioUnitTimePitch?
     
     var isCheatMode: Bool {
         return cheatItemID != nil
@@ -34,7 +37,12 @@ class RouletteViewModel: ObservableObject {
         isSpinning = true
         updateItemAngles()
         
-        let spinDuration: Double = 11.0
+        var spinDuration: Double
+        if isCheatMode {
+            spinDuration = 15.0
+        } else {
+            spinDuration = 11.0
+        }
         let steps = 100
         
         // ドラムロール再生開始
@@ -51,11 +59,9 @@ class RouletteViewModel: ObservableObject {
         let baseRotation: Double
         
         if isCheatMode {
-            // インチキモード：固定回転数
             baseRotation = 360.0 * 3 // 3回転
         } else {
-            // 通常モード：自由に回転数設定
-            let spinCount = 7.0 // ここで好きな回転数に設定（例：8回転）
+            let spinCount = 3.0
             baseRotation = 360.0 * spinCount
         }
         
@@ -72,7 +78,7 @@ class RouletteViewModel: ObservableObject {
         let targetAngle = Double.random(in: riggedItem.startAngle...riggedItem.endAngle)
         let adjustedTarget = (360 - (targetAngle + 90)).truncatingRemainder(dividingBy: 360)
         
-        let cheatRotation = 1080.0 * 3 // 3回転
+        let cheatRotation = 1080.0 * 1 // 3回転
         let finalTarget = startRotation + cheatRotation + adjustedTarget
         
         return finalTarget
@@ -82,7 +88,7 @@ class RouletteViewModel: ObservableObject {
         let interval = duration / Double(steps)
         var currentStep = 0
         var currentRotation = rotation.truncatingRemainder(dividingBy: 360)
-        let initialSpeed = (baseRotation / Double(steps)) * 5  // ←ここ！
+        let initialSpeed = (baseRotation / Double(steps)) * 3
         
         Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in
             let progress = Double(currentStep) / Double(steps)
