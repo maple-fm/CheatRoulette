@@ -27,7 +27,7 @@ struct CheatRouletteApp: App {
     var body: some Scene {
         WindowGroup {
             ZStack {
-                Color(hex: "#F2F2F2")
+                Color("Background")
                     .ignoresSafeArea()
                 
                 ContentView()

@@ -50,7 +50,7 @@ struct ContentView: View {
                         // ルーレット
                         if viewModel.items.isEmpty {
                             Circle()
-                                .foregroundStyle(Color(hex: "#D9D9D9")!)
+                                .foregroundStyle(Color("Empty"))
                                 .frame(width: 303, height: 303)
                         } else {
                             RouletteWheel(items: viewModel.items, rotation: viewModel.rotation)
@@ -65,7 +65,7 @@ struct ContentView: View {
                             Text("START")
                                 .font(.system(size: 36))
                                 .frame(width: 160, height: 160)
-                                .background(Color(hex: "F2F2F2"))
+                                .background(Color("Background"))
                                 .cornerRadius(999)
                         }
                         .buttonStyle(.plain)

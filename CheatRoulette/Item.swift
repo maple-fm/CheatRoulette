@@ -22,22 +22,21 @@ final class Item: Hashable {
     
     // 🎨 固定カラーパレット
     static let palette: [Color] = [
-        Color(hex: "#F6D04D"),
-        Color(hex: "#F17C32"),
-        Color(hex: "#EA3E24"),
-        Color(hex: "#ED4CA5"),
-        Color(hex: "#B755F6"),
-        Color(hex: "#662BF2"),
-        Color(hex: "#3E98F1"),
-        Color(hex: "#5DD9F9"),
-        Color(hex: "#72F4A0"),
-        Color(hex: "#DA8EF9"),
-        Color(hex: "#7F84F9"),
-        Color(hex: "#F6D287"),
-        Color(hex: "#ED8983"),
-        Color(hex: "#D15782"),
-        Color(hex: "#123BF2"),
-        Color(hex: "#8C8C8C")  // グレー
+        Color("Yellow"),
+        Color("Orange"),
+        Color("Red"),
+        Color("Pink"),
+        Color("Purple"),
+        Color("DarkPurple"),
+        Color("Blue"),
+        Color("LightBlue"),
+        Color("LightGreen"),
+        Color("LightPurple"),
+        Color("BluePurple"),
+        Color("Begue"),
+        Color("SalmonPink"),
+        Color("Rose"),
+        Color("DarkBlue")
     ].compactMap { $0 } // nil防止
     
     // 🪄 最後に使ったインデックスを保存
