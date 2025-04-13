@@ -94,7 +94,6 @@ struct ContentView: View {
                 // データ追加ボタン
                 Button("データをセット") {
                     showOptions = true
-                    viewModel.title = ""
                 }
                 .frame(maxWidth: .infinity)
                 .frame(height: 50)
@@ -119,7 +118,7 @@ struct ContentView: View {
                 Button("Cancel", role: .cancel) { }
             }
             .sheet(isPresented: $isShowingNewItemView) {
-                AddView(items: $viewModel.items, rouletteName: $viewModel.title, cheatedID: $viewModel.cheatItemID)
+                AddView(items: $viewModel.items, rouletteName: .constant(""), cheatedID: $viewModel.cheatItemID)
             }
             .sheet(isPresented: $isSelectingTemplate) {
                 TemplateSelectionView { selectedTemplate in

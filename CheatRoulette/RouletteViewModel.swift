@@ -40,8 +40,8 @@ class RouletteViewModel: ObservableObject {
         updateItemAngles()
         soundPlayer.playDrumRoll(isMuted: isMuted)
         
-        let spinDuration = isCheatMode ? 15.0 : 11.0
-        let steps = 100
+        let spinDuration = isCheatMode ? 9.0 : 11.0
+        let steps = isCheatMode ? 90 : 100
         
         if isCheatMode {
             rotation = 0
@@ -50,7 +50,7 @@ class RouletteViewModel: ObservableObject {
         let startRotation = rotation.truncatingRemainder(dividingBy: 360)
         let targetRotation = calculateTargetRotation(startRotation: startRotation)
         
-        let baseRotation = isCheatMode ? 360.0 * 3 : 360.0 * 3 // 3回転
+        let baseRotation = isCheatMode ? 360.0 * 2 : 360.0 * 3 // 3回転
         applyRotationAnimation(
             baseRotation: baseRotation,
             duration: spinDuration,
@@ -84,38 +84,30 @@ class RouletteViewModel: ObservableObject {
     private func applyRotationAnimation(baseRotation: Double, duration: TimeInterval, steps: Int, targetRotation: Double?) {
         let interval = duration / Double(steps)
         var currentStep = 0
-        var currentRotation = rotation.truncatingRemainder(dividingBy: 360)
-        let initialSpeed = (baseRotation / Double(steps)) * 3
+        let totalSteps = Double(steps)
+        let startRotation = rotation.truncatingRemainder(dividingBy: 360)
+        let endRotation = targetRotation ?? (startRotation + baseRotation)
         
         Timer.scheduledTimer(withTimeInterval: interval, repeats: true) { timer in
-            let progress = Double(currentStep) / Double(steps)
-            let speedFactor = self.calculateSpeedFactor(initialSpeed: initialSpeed, progress: progress)
+            let progress = Double(currentStep) / totalSteps
             
-            if let targetRotation = targetRotation {
-                let remainingRotation = targetRotation - currentRotation
-                if abs(remainingRotation) < 0.5 {
-                    currentRotation = targetRotation
-                    self.rotation = currentRotation.truncatingRemainder(dividingBy: 360)
-                    timer.invalidate()
-                    self.finishSpin()
-                    return
-                } else {
-                    currentRotation += min(speedFactor, remainingRotation * 0.15)
-                }
-            } else {
-                currentRotation += speedFactor
-            }
+            // イージング関数（easeOut）を使う
+            let easedProgress = 1 - pow(1 - progress, 3)
+            
+            let currentRotation = startRotation + (endRotation - startRotation) * easedProgress
             
             self.rotation = currentRotation.truncatingRemainder(dividingBy: 360)
             
-            if currentStep >= steps {
+            currentStep += 1
+            
+            if currentStep > steps {
                 timer.invalidate()
+                self.rotation = endRotation.truncatingRemainder(dividingBy: 360)
                 self.finishSpin()
             }
-            
-            currentStep += 1
         }
     }
+
     
     private func calculateSpeedFactor(initialSpeed: Double, progress: Double) -> Double {
         return initialSpeed * (1.0 - pow(progress, 3))
