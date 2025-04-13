@@ -124,7 +124,9 @@ class RouletteViewModel: ObservableObject {
     private func finishSpin() {
         finalizeSelection()
         isSpinning = false
-        soundPlayer.stop()
+        if !isCheatMode {
+            soundPlayer.stop()
+        }
     }
     
     private func finalizeSelection() {
